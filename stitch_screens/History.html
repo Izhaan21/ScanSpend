@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ExpenseScan - History</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "background": "#f7f9fb",
+                    "outline": "#76777d",
+                    "surface-dim": "#d8dadc",
+                    "on-tertiary-fixed": "#271901",
+                    "on-primary-container": "#7c839b",
+                    "on-background": "#191c1e",
+                    "secondary-fixed": "#89f5e7",
+                    "primary": "#000000",
+                    "surface-tint": "#565e74",
+                    "on-tertiary-container": "#98805d",
+                    "secondary": "#006a61",
+                    "surface-container-high": "#e6e8ea",
+                    "surface": "#f7f9fb",
+                    "on-secondary-container": "#006f66",
+                    "surface-container-highest": "#e0e3e5",
+                    "on-primary-fixed": "#131b2e",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed-variant": "#3f465c",
+                    "outline-variant": "#c6c6cd",
+                    "on-error": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "on-secondary-fixed": "#00201d",
+                    "inverse-surface": "#2d3133",
+                    "on-secondary-fixed-variant": "#005049",
+                    "surface-variant": "#e0e3e5",
+                    "secondary-container": "#86f2e4",
+                    "tertiary-container": "#271901",
+                    "on-surface-variant": "#45464d",
+                    "primary-fixed": "#dae2fd",
+                    "surface-container": "#eceef0",
+                    "on-secondary": "#ffffff",
+                    "inverse-primary": "#bec6e0",
+                    "on-surface": "#191c1e",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-fixed-variant": "#574425",
+                    "error": "#ba1a1a",
+                    "primary-fixed-dim": "#bec6e0",
+                    "inverse-on-surface": "#eff1f3",
+                    "primary-container": "#131b2e",
+                    "tertiary": "#000000",
+                    "surface-container-low": "#f2f4f6",
+                    "surface-bright": "#f7f9fb",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed-dim": "#6bd8cb",
+                    "tertiary-fixed": "#fcdeb5",
+                    "tertiary-fixed-dim": "#dec29a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "32px",
+                    "grid_columns": "12",
+                    "base": "4px",
+                    "sm": "8px",
+                    "gutter": "16px",
+                    "xs": "4px",
+                    "lg": "24px",
+                    "md": "16px",
+                    "margin": "24px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Manrope"],
+                    "label-md": ["Manrope"],
+                    "body-md": ["Manrope"],
+                    "headline-lg": ["Manrope"],
+                    "data-mono": ["Inter"],
+                    "body-lg": ["Manrope"],
+                    "headline-md": ["Manrope"]
+            },
+            "fontSize": {
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "data-mono": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        ::-webkit-scrollbar { width: 0; background: transparent; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background font-body-md text-on-background min-h-screen">
+<header class="bg-slate-50/90 dark:bg-slate-950/90 docked full-width top-0 sticky z-50 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="flex justify-between items-center w-full px-4 h-16">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-slate-200">
+<img alt="Profile" data-alt="close-up portrait of a professional businessman in a studio with clean soft lighting and neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqAWwG4Om-rih4HJFdRBBizPtNxWLq0kVDhix-OHli1mhAzibGrNHPHAgwmV4u2WRzbzvuIC8RsF06-0LNqp9GjbHYBaAvIbhbi_bHunM3abX4rdD97P50cnGsVUTGGN88hZF9bfP0gbkMnc9DMVUGyFfENOL3By4a2po-y8zsQKCBeCDaomkhadf_-q5-fzW-8cUm6Oh-tBszGFrmjR-dUh9vS_b1yc5X9oz_OGdrbC0gabejX_MK8Lo7vZvFM6XN8XcR9OAb05IM"/>
+</div>
+<h1 class="font-['Manrope'] font-bold text-lg tracking-tight text-slate-900 dark:text-slate-50">ScanSpend</h1>
+</div>
+<button class="text-slate-900 dark:text-slate-50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors p-2 rounded-full Active: scale-[0.98] transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="max-w-md mx-auto pb-32">
+<section class="px-margin pt-lg pb-md">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full h-12 pl-12 pr-4 bg-surface-container-lowest border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary-container focus:border-primary-container transition-all text-body-md outline-none" placeholder="Search expenses..." type="text"/>
+</div>
+</section>
+<section class="px-margin pb-lg overflow-x-auto">
+<div class="flex items-center gap-3 no-scrollbar">
+<button class="px-4 py-2 rounded-full bg-primary-container text-white text-label-md whitespace-nowrap">All Time</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-highest text-on-surface-variant text-label-md whitespace-nowrap hover:bg-surface-dim transition-colors">This Week</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-highest text-on-surface-variant text-label-md whitespace-nowrap hover:bg-surface-dim transition-colors">This Month</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-highest text-on-surface-variant text-label-md whitespace-nowrap hover:bg-surface-dim transition-colors">Category</button>
+<button class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full bg-surface-container-highest text-on-surface-variant">
+<span class="material-symbols-outlined text-sm" data-icon="filter_list">filter_list</span>
+</button>
+</div>
+</section>
+<section class="px-margin space-y-lg">
+<div class="space-y-sm">
+<h3 class="text-label-md text-outline uppercase tracking-widest pl-1">Today</h3>
+<div class="space-y-2">
+<div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-[0_4px_20px_rgba(15,23,42,0.05)] flex items-center justify-between group active:scale-[0.98] transition-all">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="local_cafe">local_cafe</span>
+</div>
+<div>
+<p class="font-headline-md text-on-surface text-[16px]">Blue Bottle Coffee</p>
+<p class="text-label-md text-outline font-normal">Food &amp; Drink • 08:45 AM</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-data-mono font-bold text-on-surface">$12.50</p>
+<span class="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-bold uppercase">Captured</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-[0_4px_20px_rgba(15,23,42,0.05)] flex items-center justify-between group active:scale-[0.98] transition-all">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="commute">commute</span>
+</div>
+<div>
+<p class="font-headline-md text-on-surface text-[16px]">Uber Technologies</p>
+<p class="text-label-md text-outline font-normal">Transport • 09:30 AM</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-data-mono font-bold text-on-surface">$24.80</p>
+<span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-bold uppercase">Pending</span>
+</div>
+</div>
+</div>
+</div>
+<div class="space-y-sm">
+<div class="flex justify-between items-center pl-1">
+<h3 class="text-label-md text-outline uppercase tracking-widest">Yesterday</h3>
+<p class="text-label-md text-outline font-normal">Total: $258.40</p>
+</div>
+<div class="space-y-2">
+<div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-[0_4px_20px_rgba(15,23,42,0.05)] flex items-center justify-between group active:scale-[0.98] transition-all">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="shopping_bag">shopping_bag</span>
+</div>
+<div>
+<p class="font-headline-md text-on-surface text-[16px]">Apple Store</p>
+<p class="text-label-md text-outline font-normal">Electronics • 02:15 PM</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-data-mono font-bold text-on-surface">$199.00</p>
+<span class="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-bold uppercase">Captured</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-[0_4px_20px_rgba(15,23,42,0.05)] flex items-center justify-between group active:scale-[0.98] transition-all">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="restaurant">restaurant</span>
+</div>
+<div>
+<p class="font-headline-md text-on-surface text-[16px]">The Grill House</p>
+<p class="text-label-md text-outline font-normal">Entertainment • 08:00 PM</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-data-mono font-bold text-on-surface">$59.40</p>
+<span class="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-bold uppercase">Captured</span>
+</div>
+</div>
+</div>
+</div>
+<div class="space-y-sm">
+<h3 class="text-label-md text-outline uppercase tracking-widest pl-1">Feb 24, 2024</h3>
+<div class="space-y-2">
+<div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-[0_4px_20px_rgba(15,23,42,0.05)] flex items-center justify-between group active:scale-[0.98] transition-all">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="fitness_center">fitness_center</span>
+</div>
+<div>
+<p class="font-headline-md text-on-surface text-[16px]">Equinox Gym</p>
+<p class="text-label-md text-outline font-normal">Health • 06:00 AM</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-data-mono font-bold text-on-surface">$150.00</p>
+<span class="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-bold uppercase">Captured</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-2 pb-safe bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-t border-slate-100 dark:border-slate-800 shadow-[0_-4px_20px_rgba(15,23,42,0.05)] z-50">
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-3 py-1.5 hover:text-teal-600 dark:hover:text-teal-400 transition-all Active: scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-['Manrope'] font-semibold text-[10px] uppercase tracking-wider mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-3 py-1.5 hover:text-teal-600 dark:hover:text-teal-400 transition-all Active: scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="instant_mix">instant_mix</span>
+<span class="font-['Manrope'] font-semibold text-[10px] uppercase tracking-wider mt-1">Scan</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 rounded-xl px-3 py-1.5 transition-all Active: scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="history" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="font-['Manrope'] font-semibold text-[10px] uppercase tracking-wider mt-1">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-3 py-1.5 hover:text-teal-600 dark:hover:text-teal-400 transition-all Active: scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="pie_chart">pie_chart</span>
+<span class="font-['Manrope'] font-semibold text-[10px] uppercase tracking-wider mt-1">Reports</span>
+</a>
+</nav>
+</body></html>

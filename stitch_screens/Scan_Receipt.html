@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ScanSpend - Precision Capture</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "background": "#f7f9fb",
+            "outline": "#76777d",
+            "surface-dim": "#d8dadc",
+            "on-tertiary-fixed": "#271901",
+            "on-primary-container": "#7c839b",
+            "on-background": "#191c1e",
+            "secondary-fixed": "#89f5e7",
+            "primary": "#000000",
+            "surface-tint": "#565e74",
+            "on-tertiary-container": "#98805d",
+            "secondary": "#006a61",
+            "surface-container-high": "#e6e8ea",
+            "surface": "#f7f9fb",
+            "on-secondary-container": "#006f66",
+            "surface-container-highest": "#e0e3e5",
+            "on-primary-fixed": "#131b2e",
+            "on-error-container": "#93000a",
+            "on-primary-fixed-variant": "#3f465c",
+            "outline-variant": "#c6c6cd",
+            "on-error": "#ffffff",
+            "on-primary": "#ffffff",
+            "on-secondary-fixed": "#00201d",
+            "inverse-surface": "#2d3133",
+            "on-secondary-fixed-variant": "#005049",
+            "surface-variant": "#e0e3e5",
+            "secondary-container": "#86f2e4",
+            "tertiary-container": "#271901",
+            "on-surface-variant": "#45464d",
+            "primary-fixed": "#dae2fd",
+            "surface-container": "#eceef0",
+            "on-secondary": "#ffffff",
+            "inverse-primary": "#bec6e0",
+            "on-surface": "#191c1e",
+            "error-container": "#ffdad6",
+            "on-tertiary-fixed-variant": "#574425",
+            "error": "#ba1a1a",
+            "primary-fixed-dim": "#bec6e0",
+            "inverse-on-surface": "#eff1f3",
+            "primary-container": "#131b2e",
+            "tertiary": "#000000",
+            "surface-container-low": "#f2f4f6",
+            "surface-bright": "#f7f9fb",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "secondary-fixed-dim": "#6bd8cb",
+            "tertiary-fixed": "#fcdeb5",
+            "tertiary-fixed-dim": "#dec29a"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "xl": "32px",
+            "grid_columns": "12",
+            "base": "4px",
+            "sm": "8px",
+            "gutter": "16px",
+            "xs": "4px",
+            "lg": "24px",
+            "md": "16px",
+            "margin": "24px"
+          },
+          "fontFamily": {
+            "display-lg": ["Manrope"],
+            "label-md": ["Manrope"],
+            "body-md": ["Manrope"],
+            "headline-lg": ["Manrope"],
+            "data-mono": ["Inter"],
+            "body-lg": ["Manrope"],
+            "headline-md": ["Manrope"]
+          },
+          "fontSize": {
+            "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+            "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+            "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+            "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+            "data-mono": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+            "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+            "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      line-height: 1;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+    }
+    .viewfinder-mask {
+      mask: radial-gradient(circle, transparent 0%, transparent 100%) content-box,
+            linear-gradient(#000 0 0);
+      mask-composite: exclude;
+      -webkit-mask-composite: destination-out;
+    }
+    .scanner-line {
+      box-shadow: 0 0 15px 2px #89f5e7;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background font-body-md text-on-background antialiased overflow-hidden">
+<!-- Top Navigation Shell (Contextual: Back Action Implies Temporary Departure) -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin h-16 bg-transparent text-white">
+<button class="flex items-center justify-center w-10 h-10 rounded-full bg-black/20 backdrop-blur-md active:scale-95 transition-all">
+<span class="material-symbols-outlined">close</span>
+</button>
+<div class="px-4 py-1.5 rounded-full bg-black/40 backdrop-blur-md">
+<p class="font-label-md text-white text-xs uppercase tracking-widest">Document Mode</p>
+</div>
+<button class="flex items-center justify-center w-10 h-10 rounded-full bg-black/20 backdrop-blur-md active:scale-95 transition-all">
+<span class="material-symbols-outlined" data-icon="flash_on">flash_on</span>
+</button>
+</header>
+<!-- Full Screen Viewfinder -->
+<main class="relative h-screen w-full bg-black">
+<!-- Camera Feed Emulation -->
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover opacity-80 brightness-75" data-alt="overhead view of a crisp paper receipt on a dark slate surface with professional office lighting and sharp focus" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUh0iqJacdv0-zx741L8wLoQRaL8SOrle4_ruz2xcnO5ZRrSS44oifUuY-3zfudCHF0b76Op8V6MFWDxdC8cuHxvM05_B1RehvrXpCLSETrwUcCAUJ9OajlFXRXzxgbtvuuxGmWW2rJHtK-rmPgKdijuwvas59rettRhhj_AnSm3VTPN7KmHG1YiM3kqWOSko2k0MjkorwT1S8lrFo-uWpq3P0CEaLDCfVydlOKusAu9HoQMba1JopyDsQZ344SnyWOq8ug2PLzMyw"/>
+</div>
+<!-- Scanner Overlay & Viewfinder -->
+<div class="absolute inset-0 z-10 flex flex-col items-center justify-center">
+<!-- Translucent Mask Layer -->
+<div class="absolute inset-0 bg-black/40"></div>
+<!-- Viewfinder Cutout -->
+<div class="relative w-[85%] aspect-[3/4] max-w-sm rounded-[2rem] border-2 border-white/30 bg-transparent overflow-hidden shadow-[0_0_0_1000px_rgba(0,0,0,0.4)]">
+<!-- Corner Brackets -->
+<div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-secondary-fixed rounded-tl-xl"></div>
+<div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-secondary-fixed rounded-tr-xl"></div>
+<div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-secondary-fixed rounded-bl-xl"></div>
+<div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-secondary-fixed rounded-br-xl"></div>
+<!-- Animated Scanner Line -->
+<div class="absolute left-0 right-0 h-0.5 bg-secondary-fixed scanner-line top-[20%] opacity-50"></div>
+</div>
+<!-- Tip Text -->
+<div class="mt-lg z-20 text-center px-margin">
+<p class="font-body-md text-white/90 drop-shadow-md">Align the receipt within the frame</p>
+<p class="font-label-md text-secondary-fixed text-xs mt-xs tracking-wide">AUTODETECTING...</p>
+</div>
+</div>
+<!-- Bottom Controls Area -->
+<section class="absolute bottom-0 left-0 w-full z-30 px-margin pb-xl pt-lg bg-gradient-to-t from-black/80 to-transparent">
+<div class="flex items-center justify-around max-w-md mx-auto">
+<!-- Gallery Button -->
+<button class="flex flex-col items-center gap-2 group active:scale-95 transition-transform">
+<div class="w-12 h-12 rounded-full border border-white/20 bg-white/10 backdrop-blur-xl flex items-center justify-center group-hover:bg-white/20 transition-colors">
+<span class="material-symbols-outlined text-white" data-icon="photo_library">photo_library</span>
+</div>
+<span class="font-label-md text-[10px] text-white/70 uppercase">Gallery</span>
+</button>
+<!-- Capture Button -->
+<div class="relative flex items-center justify-center">
+<div class="absolute w-24 h-24 rounded-full border-2 border-white/30 animate-pulse"></div>
+<button class="relative w-20 h-20 rounded-full bg-white p-1 shadow-2xl active:scale-90 transition-transform">
+<div class="w-full h-full rounded-full border-4 border-black/5 flex items-center justify-center">
+<div class="w-14 h-14 rounded-full bg-gradient-to-br from-white to-slate-200 border border-slate-300"></div>
+</div>
+</button>
+</div>
+<!-- Multi-scan/Settings -->
+<button class="flex flex-col items-center gap-2 group active:scale-95 transition-transform">
+<div class="w-12 h-12 rounded-full border border-white/20 bg-white/10 backdrop-blur-xl flex items-center justify-center group-hover:bg-white/20 transition-colors">
+<span class="material-symbols-outlined text-white" data-icon="layers">layers</span>
+</div>
+<span class="font-label-md text-[10px] text-white/70 uppercase">Batch</span>
+</button>
+</div>
+<!-- Mode Selector -->
+<div class="mt-xl flex justify-center gap-xl overflow-x-auto no-scrollbar">
+<button class="font-label-md text-xs text-white/40 uppercase whitespace-nowrap">Manual</button>
+<button class="font-label-md text-xs text-white uppercase border-b-2 border-secondary-fixed pb-1 whitespace-nowrap">Auto-Scan</button>
+<button class="font-label-md text-xs text-white/40 uppercase whitespace-nowrap">ID Card</button>
+</div>
+</section>
+</main>
+<!-- Bottom Nav Bar (Suppress because it's a task-focused sub-page) -->
+<!-- Note: BottomNavBar logic states suppression for task-focused pages with 'close' actions -->
+<!-- Floating Feedback Overlay (Hidden by default, shown on 'capture' intent) -->
+<div class="hidden fixed inset-0 z-[100] pointer-events-none border-[12px] border-secondary-fixed/40 transition-opacity duration-300"></div>
+</body></html>

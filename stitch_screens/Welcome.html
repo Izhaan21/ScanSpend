@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Welcome to ScanSpend</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500&amp;family=Manrope:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#271901",
+                        "on-secondary-fixed": "#00201d",
+                        "on-secondary-container": "#006f66",
+                        "surface-variant": "#e0e3e5",
+                        "surface-dim": "#d8dadc",
+                        "outline": "#76777d",
+                        "surface-container-high": "#e6e8ea",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface-variant": "#45464d",
+                        "on-secondary-fixed-variant": "#005049",
+                        "outline-variant": "#c6c6cd",
+                        "primary": "#000000",
+                        "secondary-container": "#86f2e4",
+                        "surface-container-low": "#f2f4f6",
+                        "error-container": "#ffdad6",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#bec6e0",
+                        "tertiary": "#000000",
+                        "surface-bright": "#f7f9fb",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed": "#fcdeb5",
+                        "on-background": "#191c1e",
+                        "on-tertiary-fixed-variant": "#574425",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface": "#f7f9fb",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed-dim": "#6bd8cb",
+                        "primary-fixed": "#dae2fd",
+                        "on-tertiary-container": "#98805d",
+                        "surface-tint": "#565e74",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#131b2e",
+                        "inverse-on-surface": "#eff1f3",
+                        "secondary-fixed": "#89f5e7",
+                        "tertiary-fixed-dim": "#dec29a",
+                        "on-tertiary-fixed": "#271901",
+                        "primary-fixed-dim": "#bec6e0",
+                        "on-primary-container": "#7c839b",
+                        "surface-container": "#eceef0",
+                        "secondary": "#006a61",
+                        "primary-container": "#131b2e",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "on-tertiary": "#ffffff",
+                        "on-surface": "#191c1e",
+                        "background": "#f7f9fb",
+                        "inverse-surface": "#2d3133"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "3xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "sm": "8px",
+                        "base": "4px",
+                        "xs": "4px",
+                        "margin": "24px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "grid_columns": "12",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Manrope", "sans-serif"],
+                        "display-lg": ["Manrope", "sans-serif"],
+                        "headline-md": ["Manrope", "sans-serif"],
+                        "headline-lg": ["Manrope", "sans-serif"],
+                        "label-md": ["Manrope", "sans-serif"],
+                        "data-mono": ["Inter", "monospace"],
+                        "body-lg": ["Manrope", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "data-mono": ["16px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface antialiased min-h-screen flex flex-col justify-center relative overflow-hidden font-body-md selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- Ambient Background Elements for Depth -->
+<div class="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-secondary-container/20 rounded-full blur-[80px] pointer-events-none"></div>
+<div class="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-primary-fixed/30 rounded-full blur-[100px] pointer-events-none"></div>
+<main class="w-full max-w-[480px] mx-auto px-margin py-xl flex flex-col items-center justify-center min-h-[884px] z-10">
+<!-- App Identity -->
+<div class="flex items-center gap-sm mb-xl">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center shadow-[0_4px_20px_rgba(19,27,46,0.15)]">
+<span class="material-symbols-outlined text-on-primary text-[24px]" data-icon="document_scanner">document_scanner</span>
+</div>
+<span class="font-headline-lg text-headline-lg text-primary-container">ScanSpend</span>
+</div>
+<!-- High-Impact Illustration -->
+<div class="w-full max-w-[320px] aspect-square mb-xl rounded-3xl overflow-hidden shadow-[0_8px_30px_rgba(15,23,42,0.08)] bg-surface-container-lowest border border-surface-variant/50 relative group">
+<div class="absolute inset-0 bg-gradient-to-tr from-surface-container-lowest to-surface/0 z-10 pointer-events-none"></div>
+<img alt="Abstract illustration" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Abstract 3D composition representing financial data, with clean translucent geometric panels, a stylized glowing line chart growing upward, soft bright lighting, corporate tech aesthetic featuring deep navy and teal accents on a pristine white background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkx9oexjjiNS0VKryA6F8M0Ldr6HNtyNKjPsUDjCfX6Wj3Y1jwm8Pd_GZoQGPL8APRkb2tOFkJ1MY59ms2fz0CQ1-g6dN83k47y2Ru_ibo_4dYi9GS4Iu_xbY7qJ3kuM4PQa23_uOsgJQ3FMMUmrJ_EJzIxwgzgIGO3luUcQn7ARwuNpg3p1VVtp0-BQK_etT7gpg8zL9DMu-GMEyQQWgmUIQyO_xiMIsShijfwNZOw0t7Q1NneBnNz2ImZmzUgo-OBV84Cb0cMvCw"/>
+</div>
+<!-- Welcome Typography -->
+<div class="text-center mb-xl w-full">
+<h1 class="font-display-lg text-display-lg text-on-surface mb-sm tracking-tight leading-tight">
+                Master Your Expenses<br/>with AI
+            </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-[90%] mx-auto mt-4">
+                Automate receipt scanning, categorize spending instantly, and achieve institutional-grade financial clarity.
+            </p>
+</div>
+<!-- Primary Actions -->
+<div class="w-full flex flex-col gap-md">
+<button class="w-full bg-secondary text-on-secondary rounded-xl py-4 px-6 flex items-center justify-center gap-sm font-label-md text-label-md uppercase tracking-wider transition-all duration-150 ease-in-out hover:scale-[0.98] shadow-[0_4px_16px_rgba(0,106,97,0.25)] hover:shadow-[0_2px_8px_rgba(0,106,97,0.3)]">
+                Get Started
+                <span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<button class="w-full bg-transparent text-primary-container border-2 border-outline-variant rounded-xl py-4 px-6 flex items-center justify-center font-label-md text-label-md uppercase tracking-wider transition-all duration-150 ease-in-out hover:bg-surface-container hover:border-outline hover:scale-[0.98]">
+                Log In
+            </button>
+</div>
+</main>
+</body></html>
