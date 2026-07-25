@@ -72,7 +72,7 @@ class AuthService {
     final GoogleSignInAccount googleUser =
         await GoogleSignIn.instance.authenticate();
 
-    // v7: get id token via authentication property (synchronous in v7)
+    // v7: authentication is a synchronous property — no await needed
     final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
     final credential = fb.GoogleAuthProvider.credential(

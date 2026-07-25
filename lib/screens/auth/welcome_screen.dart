@@ -57,23 +57,12 @@ class WelcomeScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF131B2E), // primary-container
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF131B2E).withValues(alpha: 0.15),
-                              blurRadius: 20,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(Icons.document_scanner, color: Colors.white, size: 24),
+                      Image.asset(
+                        'assets/logo.png',
+                        width: 44,
+                        height: 44,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 10),
                       Text(
                         'ScanSpend',
                         style: theme.textTheme.displaySmall?.copyWith(

@@ -49,8 +49,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
           });
         }
 
-        // Skip login screen for now -> always navigate to MainNavigationScreen
-        return const MainNavigationScreen();
+        if (isNowAuthenticated) {
+          return const MainNavigationScreen();
+        } else {
+          return const WelcomeScreen();
+        }
       },
     );
   }

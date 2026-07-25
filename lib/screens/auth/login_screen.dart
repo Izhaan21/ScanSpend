@@ -122,15 +122,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // Brand & Headline
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFECEEF0), // surface-container
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFC6C6CD).withValues(alpha: 0.5)),
-                        ),
-                        child: const Icon(Icons.qr_code_scanner, color: Color(0xFF006A61), size: 28),
+                      Image.asset(
+                        'assets/logo.png',
+                        width: 56,
+                        height: 56,
                       ),
                       const SizedBox(height: 16),
                       Text(

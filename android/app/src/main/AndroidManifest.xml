@@ -1,6 +1,24 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ── Permissions ──────────────────────────────────────────────────── -->
+    <!-- Firebase Auth, Firestore, Gemini API all need internet -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Camera for receipt scanning -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Gallery access: Android 13+ uses granular media permissions -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Older Android (< 13) gallery access -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <!-- Required by camera plugin for temp file writes below Android 10 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <!-- Camera hardware feature declaration (not required, but helps Play Store filtering) -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
     <application
-        android:label="scanspend"
+        android:label="ScanSpend"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -31,15 +49,17 @@
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
+
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
          https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
-
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Required for Google Sign-In account picker on Android 11+ -->
+        <package android:name="com.google.android.gms" />
     </queries>
 </manifest>
