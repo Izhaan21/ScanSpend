@@ -111,6 +111,16 @@ class WelcomeScreen extends StatelessWidget {
                             child: Image.network(
                               'https://lh3.googleusercontent.com/aida-public/AB6AXuCkx9oexjjiNS0VKryA6F8M0Ldr6HNtyNKjPsUDjCfX6Wj3Y1jwm8Pd_GZoQGPL8APRkb2tOFkJ1MY59ms2fz0CQ1-g6dN83k47y2Ru_ibo_4dYi9GS4Iu_xbY7qJ3kuM4PQa23_uOsgJQ3FMMUmrJ_EJzIxwgzgIGO3luUcQn7ARwuNpg3p1VVtp0-BQK_etT7gpg8zL9DMu-GMEyQQWgmUIQyO_xiMIsShijfwNZOw0t7Q1NneBnNz2ImZmzUgo-OBV84Cb0cMvCw',
                               fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                color: const Color(0xFFF1F5F9),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.receipt_long_outlined,
+                                    size: 80,
+                                    color: Color(0xFF006A61),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),

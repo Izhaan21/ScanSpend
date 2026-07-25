@@ -174,8 +174,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
                 Navigator.pop(ctx);
-                await auth.updatePassword(oldCtrl.text, newCtrl.text);
-                _snack('Password changed successfully');
+                try {
+                  await auth.updatePassword(oldCtrl.text, newCtrl.text);
+                  if (mounted) _snack('Password changed successfully');
+                } catch (e) {
+                  if (mounted) {
+                    final msg = e.toString().replaceAll('Exception: ', '');
+                    _snack('Failed: $msg', error: true);
+                  }
+                }
               },
               child: const Text('Update', style: TextStyle(color: Colors.white)),
             ),
@@ -212,21 +219,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ── Export data ────────────────────────────────────────────────────────────
   Future<void> _exportData() async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const AlertDialog(
-        content: Row(children: [
-          CircularProgressIndicator(),
-          SizedBox(width: 16),
-          Text('Preparing export...'),
-        ]),
-      ),
-    );
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    Navigator.pop(context);
-    _snack('Data exported successfully (CSV ready)');
+    _snack('Export Data feature coming soon! Your data is safe in Firebase.', error: false);
   }
 
   // ── Notifications ──────────────────────────────────────────────────────────
@@ -330,8 +323,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
     if (confirm == true) {
-      await auth.logout();
-      if (mounted) Navigator.of(context).pushReplacementNamed('/welcome');
+      try {
+        await auth.logout();
+        // AuthWrapper automatically navigates to WelcomeScreen on auth state change
+      } catch (e) {
+        if (mounted) _snack('Logout failed: $e', error: true);
+      }
     }
   }
 

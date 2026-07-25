@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsProvider extends ChangeNotifier {
+  static const _keyDarkMode = 'settings_dark_mode';
+  static const _keyNotifications = 'settings_notifications';
+  static const _keyCurrency = 'settings_currency';
+  static const _keyProfilePhoto = 'settings_profile_photo';
+
   bool _isDarkMode = false;
   bool _notificationsOn = true;
   String _currency = 'PKR';
@@ -25,23 +31,48 @@ class SettingsProvider extends ChangeNotifier {
     return map[_currency] ?? '$_currency ';
   }
 
-  void setDarkMode(bool value) {
+  SettingsProvider() {
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    _isDarkMode = prefs.getBool(_keyDarkMode) ?? false;
+    _notificationsOn = prefs.getBool(_keyNotifications) ?? true;
+    _currency = prefs.getString(_keyCurrency) ?? 'PKR';
+    _profilePhotoPath = prefs.getString(_keyProfilePhoto);
+    notifyListeners();
+  }
+
+  Future<void> setDarkMode(bool value) async {
     _isDarkMode = value;
     notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyDarkMode, value);
   }
 
-  void setNotifications(bool value) {
+  Future<void> setNotifications(bool value) async {
     _notificationsOn = value;
     notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyNotifications, value);
   }
 
-  void setCurrency(String value) {
+  Future<void> setCurrency(String value) async {
     _currency = value;
     notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyCurrency, value);
   }
 
-  void setProfilePhoto(String? path) {
+  Future<void> setProfilePhoto(String? path) async {
     _profilePhotoPath = path;
     notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    if (path == null) {
+      await prefs.remove(_keyProfilePhoto);
+    } else {
+      await prefs.setString(_keyProfilePhoto, path);
+    }
   }
 }

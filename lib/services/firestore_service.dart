@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/foundation.dart';
 import '../models/expense_model.dart';
 
@@ -15,10 +16,15 @@ class FirestoreService {
     }
   }
 
+  /// Returns the current Firebase user's uid, or null if not signed in.
+  String? get _uid => fb.FirebaseAuth.instance.currentUser?.uid;
+
   Future<void> saveExpenseData(Expense expense) async {
     try {
       if (_db != null) {
+        final uid = _uid;
         await _db!.collection('expenses').doc(expense.id).set({
+          'userId': uid ?? '',
           'merchantName': expense.merchantName,
           'date': expense.date.toIso8601String(),
           'total': expense.total,
@@ -44,6 +50,7 @@ class FirestoreService {
       if (_db != null) {
         final snapshot = await _db!
             .collection('expenses')
+            .where('userId', isEqualTo: userId)
             .orderBy('timestamp', descending: true)
             .get();
 
@@ -62,7 +69,11 @@ class FirestoreService {
   Future<void> updateExpense(Expense expense) async {
     try {
       if (_db != null) {
-        await _db!.collection('expenses').doc(expense.id).update(expense.toJson());
+        final uid = _uid;
+        await _db!.collection('expenses').doc(expense.id).update({
+          ...expense.toJson(),
+          'userId': uid ?? '',
+        });
       } else {
         final index = _localCache.indexWhere((e) => e.id == expense.id);
         if (index != -1) _localCache[index] = expense;

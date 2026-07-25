@@ -72,6 +72,9 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Image.network(
                 'https://lh3.googleusercontent.com/aida-public/AB6AXuBHs08iZGvbSazS81ZXGBieeXMVjWgnTXlYTMwx8HUpvBkOVEbTjYsf-dmodaG0L3-b9n6yfhx3p3TmBBUTpPFagZ825cfoKZ-6YdfYwEWNN7OIl1-aX9EysPzDoCPudlPieS8aGOewQYQ-zjltviyyHwjwElJPA0VoQ3nxDS6o5_MVIesgszDZTQ-zRO9wR76uLRvlbskKynbwYBkifqh0p04szrhTpjU9T5IqewDazHCmGy1OoC96kCJbsQHL3Yl-dUOc5wksVCd7',
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: const Color(0xFFF1F5F9),
+                ),
               ),
             ),
           ),

@@ -1,9 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class AIService {
   static const String _apiKey = 'AIzaSyAcB1RFZ0_qnWQM9CIuIoC__dvkfRuGYiI';
+
+  /// Sentinel thrown by [_parse] when the image-mode response is valid JSON
+  /// but has no recognisable merchant name, signalling that the OCR fallback
+  /// pipeline should be tried instead.
+  static const String kFallbackNeeded = 'FALLBACK_NEEDED';
 
   // Model with JSON output mode + low temperature for deterministic extraction
   final GenerativeModel _model;
@@ -82,7 +88,7 @@ Rules:
     }
   }
 
-  // ─── FALLBACK: Parse OCR text through Gemini ─────────────────────────────
+  // ── FALLBACK: Parse OCR text through Gemini ─────────────────────────────
   Future<Map<String, dynamic>> parseReceiptText(String rawText) async {
     if (rawText.trim().isEmpty) {
       throw Exception('No text could be read from the image. Try better lighting or a clearer photo.');
@@ -92,11 +98,158 @@ Rules:
       final prompt = '$_systemInstruction\n\n--- RECEIPT TEXT ---\n$rawText\n--- END ---';
       final response = await _textModel.generateContent([Content.text(prompt)]);
       return _parse(response.text, source: 'ocr-text');
-    } on GenerativeAIException catch (e) {
-      throw _mapApiError(e);
     } catch (e) {
-      throw Exception('Text parsing failed: $e');
+      // Automatic Fallback to Local Parser on any Gemini/API error (e.g. Quota Exceeded)
+      // Using a log function instead of print to pass lints
+      final logMessage = 'Gemini API failed with error: $e. Falling back to local parser...';
+      debugPrint(logMessage);
+      return parseReceiptTextLocally(rawText);
     }
+  }
+
+  // ── LOCAL FALLBACK PARSER (Regex & Heuristics) ───────────────────────────
+  Map<String, dynamic> parseReceiptTextLocally(String rawText) {
+    final lines = rawText.split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
+
+    if (lines.isEmpty) {
+      return {
+        'merchantName': 'Unknown Merchant',
+        'date': DateTime.now().toIso8601String(),
+        'total': 0.0,
+        'category': 'Other',
+        'items': <Map<String, dynamic>>[],
+      };
+    }
+
+    // 1. Identify Merchant Name (First logical non-skipped line)
+    String merchantName = 'Unknown Merchant';
+    final skipKeywords = ['date', 'time', 'tax', 'receipt', 'invoice', 'welcome', 'tel', 'phone', 'cashier', 'rs.', 'pkr', '\$'];
+    for (final line in lines) {
+      final l = line.toLowerCase();
+      bool skip = false;
+      for (final kw in skipKeywords) {
+        if (l.contains(kw)) {
+          skip = true;
+          break;
+        }
+      }
+      if (!skip && line.length > 2) {
+        merchantName = line;
+        break;
+      }
+    }
+
+    // 2. Extract Date
+    String dateStr = DateTime.now().toIso8601String();
+    final dateRegex = RegExp(r'(\d{2,4}[-/.]\d{2}[-/.]\d{2,4})');
+    for (final line in lines) {
+      final match = dateRegex.firstMatch(line);
+      if (match != null) {
+        final dateParsed = _tryParseDate(match.group(0)!);
+        if (dateParsed != null) {
+          dateStr = dateParsed;
+          break;
+        }
+      }
+    }
+
+    // 3. Extract items & prices
+    final List<Map<String, dynamic>> items = [];
+    final priceRegex = RegExp(r'(\d+\.\d{2})'); // Match decimal values
+
+    double parsedTotal = 0.0;
+    double maxNum = 0.0;
+
+    for (final line in lines) {
+      final matches = priceRegex.allMatches(line);
+      if (matches.isNotEmpty) {
+        final lastMatch = matches.last.group(0)!;
+        final price = double.tryParse(lastMatch) ?? 0.0;
+        
+        // Find item name (everything before the price)
+        final idx = line.lastIndexOf(lastMatch);
+        String name = line.substring(0, idx).trim()
+            .replaceAll(RegExp(r'[^\w\s]'), '')
+            .trim();
+            
+        if (name.isEmpty) name = 'Item';
+        
+        final l = line.toLowerCase();
+        if (l.contains('total') || l.contains('net') || l.contains('subtotal') || l.contains('amount')) {
+          if (price > maxNum) {
+            maxNum = price;
+          }
+          continue;
+        }
+
+        if (price > 0) {
+          items.add({'name': name, 'price': price});
+          parsedTotal += price;
+        }
+      }
+    }
+
+    // 4. Extract Total Amount
+    double total = 0.0;
+    bool foundTotalKeyword = false;
+    for (final line in lines) {
+      final l = line.toLowerCase();
+      if (l.contains('total') || l.contains('net') || l.contains('payable') || l.contains('amount due')) {
+        final matches = priceRegex.allMatches(line);
+        if (matches.isNotEmpty) {
+          total = double.tryParse(matches.last.group(0)!) ?? 0.0;
+          foundTotalKeyword = true;
+          break;
+        }
+      }
+    }
+
+    if (!foundTotalKeyword || total == 0.0) {
+      total = maxNum > 0.0 ? maxNum : (parsedTotal > 0.0 ? parsedTotal : 0.0);
+    }
+
+    // 5. Category identification
+    String category = 'Other';
+    final rawTextLower = rawText.toLowerCase();
+    if (rawTextLower.contains('pharma') || rawTextLower.contains('hospital') || rawTextLower.contains('medical') || rawTextLower.contains('clinic') || rawTextLower.contains('prescription') || rawTextLower.contains('lab')) {
+      category = 'Healthcare';
+    } else if (rawTextLower.contains('restaurant') || rawTextLower.contains('cafe') || rawTextLower.contains('coffee') || rawTextLower.contains('pizza') || rawTextLower.contains('burger') || rawTextLower.contains('food')) {
+      category = 'Food & Dining';
+    } else if (rawTextLower.contains('grocer') || rawTextLower.contains('supermarket') || rawTextLower.contains('mart') || rawTextLower.contains('store')) {
+      category = 'Groceries';
+    } else if (rawTextLower.contains('taxi') || rawTextLower.contains('uber') || rawTextLower.contains('careem') || rawTextLower.contains('fuel') || rawTextLower.contains('petrol')) {
+      category = 'Transport';
+    } else if (rawTextLower.contains('elec') || rawTextLower.contains('mobile') || rawTextLower.contains('laptop')) {
+      category = 'Electronics';
+    } else if (rawTextLower.contains('mall') || rawTextLower.contains('shopping') || rawTextLower.contains('clothing')) {
+      category = 'Shopping';
+    }
+
+    if (items.isEmpty && total > 0) {
+      items.add({'name': 'Total Expense', 'price': total});
+    }
+
+    return {
+      'merchantName': merchantName,
+      'date': dateStr,
+      'total': total,
+      'category': category,
+      'items': items,
+    };
+  }
+
+  String? _tryParseDate(String raw) {
+    try {
+      final cleaned = raw.replaceAll(RegExp(r'[./]'), '-');
+      final parts = cleaned.split('-');
+      if (parts.length == 3) {
+        return DateTime.parse(cleaned).toIso8601String();
+      }
+    } catch (_) {}
+    return null;
   }
 
   // ─── Response parser ──────────────────────────────────────────────────────
@@ -128,7 +281,7 @@ Rules:
 
     if (merchant.isEmpty || merchant.toLowerCase() == 'unknown merchant') {
       if (source == 'image') {
-        throw Exception('_fallback_needed'); // triggers OCR fallback
+        throw Exception(AIService.kFallbackNeeded); // triggers OCR fallback
       }
       throw Exception('Could not identify the merchant name from this receipt.');
     }

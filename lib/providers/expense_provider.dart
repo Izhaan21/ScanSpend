@@ -95,6 +95,12 @@ class ExpenseProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateCategory(String category) {
+    if (_currentExpense == null) return;
+    _currentExpense = _currentExpense!.copyWith(category: category);
+    notifyListeners();
+  }
+
   void updateMerchantName(String name) {
     if (_currentExpense == null) return;
     _currentExpense = _currentExpense!.copyWith(merchantName: name);

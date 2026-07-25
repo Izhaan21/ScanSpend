@@ -28,13 +28,23 @@ class Expense {
     return Expense(
       id: json['id'] as String? ?? '',
       merchantName: json['merchantName'] as String? ?? 'Unknown Merchant',
-      date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
+      date: _safeParseDate(json['date']),
       total: (json['total'] as num?)?.toDouble() ?? 0.0,
       category: json['category'] as String? ?? 'Other',
       items: items,
       memo: json['memo'] as String? ?? '',
       status: json['status'] as String? ?? 'Pending',
     );
+  }
+
+  /// Safely parses an ISO date string, falling back to [DateTime.now()] on any error.
+  static DateTime _safeParseDate(dynamic raw) {
+    if (raw == null) return DateTime.now();
+    try {
+      return DateTime.parse(raw.toString());
+    } catch (_) {
+      return DateTime.now();
+    }
   }
 
   Map<String, dynamic> toJson() {

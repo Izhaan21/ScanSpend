@@ -198,8 +198,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final now = DateTime.now();
             final thisMonth = expenses.where(
                 (e) => e.date.month == now.month && e.date.year == now.year).toList();
+
+            // Last month — handle January correctly (month 1 → previous month is Dec of prior year)
+            final prevMonth = now.month == 1 ? 12 : now.month - 1;
+            final prevYear = now.month == 1 ? now.year - 1 : now.year;
             final lastMonth = expenses.where(
-                (e) => e.date.month == now.month - 1 || (now.month == 1 && e.date.month == 12)).toList();
+                (e) => e.date.month == prevMonth && e.date.year == prevYear).toList();
 
             final totalThis = thisMonth.fold(0.0, (s, e) => s + e.total);
             final totalLast = lastMonth.fold(0.0, (s, e) => s + e.total);

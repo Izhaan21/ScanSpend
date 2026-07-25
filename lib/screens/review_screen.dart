@@ -17,16 +17,44 @@ class ReviewScreen extends StatefulWidget {
 
 class _ReviewScreenState extends State<ReviewScreen> {
   final TextEditingController _memoController = TextEditingController();
+  late TextEditingController _totalController;
+  final FocusNode _totalFocusNode = FocusNode();
+  String? _selectedCategory;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialise controller FIRST so the post-frame callback can safely write to it
+    _totalController = TextEditingController();
+    // Populate with data once the first frame has built and the provider is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final expense = context.read<ExpenseProvider>().currentExpense;
+      if (expense != null && mounted) {
+        _totalController.text = expense.total.toStringAsFixed(2);
+        setState(() {
+          _selectedCategory = expense.category;
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
     _memoController.dispose();
+    _totalController.dispose();
+    _totalFocusNode.dispose();
     super.dispose();
   }
 
   void _onSave(BuildContext context) async {
     final provider = context.read<ExpenseProvider>();
     if (provider.currentExpense == null) return;
+
+    // Apply any pending category change
+    if (_selectedCategory != null &&
+        _selectedCategory != provider.currentExpense!.category) {
+      provider.updateCategory(_selectedCategory!);
+    }
 
     provider.updateCurrentExpense(
       provider.currentExpense!.copyWith(memo: _memoController.text),
@@ -108,6 +136,22 @@ class _ReviewScreenState extends State<ReviewScreen> {
               return const Center(child: Text('No expense found to review.'));
             }
 
+            // Sync category from provider if not yet set locally
+            _selectedCategory ??= expense.category;
+
+            // Auto-sync the total field when item prices change,
+            // but only when the field is not actively being edited.
+            final providerTotalStr = expense.total.toStringAsFixed(2);
+            if (!_totalFocusNode.hasFocus &&
+                _totalController.text != providerTotalStr) {
+              // Schedule after this build frame to avoid setState-during-build
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && !_totalFocusNode.hasFocus) {
+                  _totalController.text = providerTotalStr;
+                }
+              });
+            }
+
             return Column(
               children: [
                 Expanded(
@@ -126,7 +170,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                           style: theme.textTheme.labelMedium?.copyWith(color: const Color(0xFF45464D)),
                         ),
                         const SizedBox(height: 8),
-                        _buildCategoryChips(theme, expense.category),
+                        _buildCategoryChips(theme, provider),
                         const SizedBox(height: 32),
 
                         // 3. Line Items Section
@@ -260,9 +304,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
     );
   }
 
-  Widget _buildCategoryChips(ThemeData theme, String activeCategory) {
+  Widget _buildCategoryChips(ThemeData theme, ExpenseProvider provider) {
     // ── Full category set matching AIService output ───────────────────────────
-    const categoryIcons = {
+    const categoryIcons = <String, IconData>{
       'Healthcare': Icons.local_hospital_outlined,
       'Food & Dining': Icons.restaurant_outlined,
       'Groceries': Icons.shopping_cart_outlined,
@@ -274,44 +318,54 @@ class _ReviewScreenState extends State<ReviewScreen> {
     };
 
     // Normalise the incoming category to match the chip keys
-    String normalizedCat = 'Other';
-    final lower = activeCategory.toLowerCase();
-    if (lower.contains('health') || lower.contains('medical') || lower.contains('pharma') || lower.contains('lab')) {
-      normalizedCat = 'Healthcare';
-    } else if (lower.contains('food') || lower.contains('dining') || lower.contains('restaurant') || lower.contains('cafe')) {
-      normalizedCat = 'Food & Dining';
-    } else if (lower.contains('grocer') || lower.contains('supermark') || lower.contains('mart')) {
-      normalizedCat = 'Groceries';
-    } else if (lower.contains('transport') || lower.contains('travel') || lower.contains('uber') || lower.contains('taxi')) {
-      normalizedCat = 'Transport';
-    } else if (lower.contains('electr')) {
-      normalizedCat = 'Electronics';
-    } else if (lower.contains('shop') || lower.contains('retail') || lower.contains('supplies')) {
-      normalizedCat = 'Shopping';
-    } else if (lower.contains('util') || lower.contains('electric') || lower.contains('gas') || lower.contains('water') || lower.contains('internet')) {
-      normalizedCat = 'Utilities';
-    } else if (categoryIcons.containsKey(activeCategory)) {
-      // Exact match from AI (already in the correct format)
-      normalizedCat = activeCategory;
-    }
+    String normalizedCat = _normaliseCategory(_selectedCategory ?? 'Other');
 
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: categoryIcons.entries.map((entry) {
-        return _buildChip(theme, entry.value, entry.key, normalizedCat == entry.key);
+        final isSelected = normalizedCat == entry.key;
+        return GestureDetector(
+          onTap: () {
+            setState(() => _selectedCategory = entry.key);
+            provider.updateCategory(entry.key);
+          },
+          child: _buildChip(theme, entry.value, entry.key, isSelected),
+        );
       }).toList(),
     );
   }
 
+  String _normaliseCategory(String activeCategory) {
+    final lower = activeCategory.toLowerCase();
+    if (lower.contains('health') || lower.contains('medical') || lower.contains('pharma') || lower.contains('lab')) {
+      return 'Healthcare';
+    } else if (lower.contains('food') || lower.contains('dining') || lower.contains('restaurant') || lower.contains('cafe')) {
+      return 'Food & Dining';
+    } else if (lower.contains('grocer') || lower.contains('supermark') || lower.contains('mart')) {
+      return 'Groceries';
+    } else if (lower.contains('transport') || lower.contains('travel') || lower.contains('uber') || lower.contains('taxi')) {
+      return 'Transport';
+    } else if (lower.contains('electr')) {
+      return 'Electronics';
+    } else if (lower.contains('shop') || lower.contains('retail') || lower.contains('supplies')) {
+      return 'Shopping';
+    } else if (lower.contains('util') || lower.contains('electric') || lower.contains('gas') || lower.contains('water') || lower.contains('internet')) {
+      return 'Utilities';
+    }
+    const validCats = {'Healthcare', 'Food & Dining', 'Groceries', 'Transport', 'Electronics', 'Shopping', 'Utilities', 'Other'};
+    return validCats.contains(activeCategory) ? activeCategory : 'Other';
+  }
+
   Widget _buildChip(ThemeData theme, IconData icon, String label, bool isSelected) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF86F2E4) : Colors.white, // secondary-container or white
+        color: isSelected ? const Color(0xFF86F2E4) : Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isSelected ? const Color(0xFF006A61).withValues(alpha: 0.1) : const Color(0xFFC6C6CD),
+          color: isSelected ? const Color(0xFF006A61).withValues(alpha: 0.3) : const Color(0xFFC6C6CD),
         ),
       ),
       child: Row(
@@ -423,8 +477,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   children: [
                     SizedBox(
                       width: 120,
-                      child: TextFormField(
-                        initialValue: expense.total.toStringAsFixed(2),
+                      child: TextField(
+                        controller: _totalController,
+                        focusNode: _totalFocusNode,
                         textAlign: TextAlign.right,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         style: theme.textTheme.displaySmall?.copyWith(
@@ -593,4 +648,3 @@ class _ReviewScreenState extends State<ReviewScreen> {
     );
   }
 }
-

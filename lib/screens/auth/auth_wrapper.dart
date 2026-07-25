@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/expense_provider.dart';
 import 'welcome_screen.dart';
-import '../../main.dart';
+import '../main_navigation_screen.dart';
 
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
@@ -49,11 +49,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
           });
         }
 
-        if (isNowAuthenticated) {
-          return const MainNavigationScreen();
-        } else {
-          return const WelcomeScreen();
-        }
+        // Skip login screen for now -> always navigate to MainNavigationScreen
+        return const MainNavigationScreen();
       },
     );
   }

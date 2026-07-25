@@ -228,54 +228,41 @@ class _ScanScreenState extends State<ScanScreen>
       result = await _aiService.parseReceiptImage(imagePath);
 
     } catch (e) {
-      final msg = e.toString();
-
-      if (msg.contains('_fallback_needed')) {
-        // ── Step 2: Vision returned unknown — try OCR → text parse ─────
-        result = await _runOcrFallback(imagePath);
-        if (result == null) return; // error already shown
-
-      } else if (msg.contains('QUOTA_EXCEEDED')) {
-        if (mounted) {
-          setState(() { _isProcessing = false; _loadingMessage = ''; _imagePath = null; });
-          _showError(
-            'Gemini API quota exceeded.\n\n'
-            'Your free-tier daily limit is reached.\n'
-            'Fix: Go to console.cloud.google.com → Enable billing on your project.',
-          );
-        }
-        return;
-
-      } else if (msg.contains('INVALID_KEY')) {
-        if (mounted) {
-          setState(() { _isProcessing = false; _loadingMessage = ''; _imagePath = null; });
-          _showError('Invalid Gemini API key.\nCheck the key in AIService._apiKey.');
-        }
-        return;
-
-      } else {
-        // Unknown error — try OCR fallback before giving up
-        result = await _runOcrFallback(imagePath);
-        if (result == null) return;
-      }
+      // Automatic fallback for all errors (e.g. rate limit, quota exceeded, invalid key)
+      debugPrint('Vision parsing failed: $e. Running OCR + local parser fallback...');
+      result = await _runOcrFallback(imagePath);
+      if (result == null) return;
     }
 
     if (!mounted) return;
 
     // ── Navigate to Review screen ─────────────────────────────────────────
-    context.read<ExpenseProvider>().setCurrentExpenseFromJson(result);
-    setState(() { _isProcessing = false; _loadingMessage = ''; });
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ReviewScreen(imagePath: imagePath),
-      ),
-    );
+    bool navigated = false;
+    try {
+      context.read<ExpenseProvider>().setCurrentExpenseFromJson(result);
+      navigated = true;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ReviewScreen(imagePath: imagePath),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Navigation to review failed: $e');
+      if (mounted) _showError('Could not open review screen. Please try again.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+          _loadingMessage = '';
+          if (!navigated) _imagePath = null;
+        });
+      }
+    }
   }
 
   /// OCR fallback: runs ML Kit text recognition then sends text to Gemini.
-  /// Returns null and shows an error if both fail.
+  /// Returns null (and resets state + shows an error) if both strategies fail.
   Future<Map<String, dynamic>?> _runOcrFallback(String imagePath) async {
     try {
       if (mounted) setState(() => _loadingMessage = '📝 Running OCR scan…');
@@ -283,7 +270,11 @@ class _ScanScreenState extends State<ScanScreen>
 
       if (rawText.trim().isEmpty) {
         if (mounted) {
-          setState(() { _isProcessing = false; _loadingMessage = ''; _imagePath = null; });
+          setState(() {
+            _isProcessing = false;
+            _loadingMessage = '';
+            _imagePath = null;
+          });
           _showError(
             'No text detected in the image.\n\n'
             'Tips:\n• Ensure good lighting\n• Hold phone steady\n• Receipt should fill the frame',
@@ -297,8 +288,13 @@ class _ScanScreenState extends State<ScanScreen>
       return result;
 
     } catch (e) {
+      // Always reset processing state before returning null
       if (mounted) {
-        setState(() { _isProcessing = false; _loadingMessage = ''; _imagePath = null; });
+        setState(() {
+          _isProcessing = false;
+          _loadingMessage = '';
+          _imagePath = null;
+        });
         final msg = e.toString();
         if (msg.contains('QUOTA_EXCEEDED')) {
           _showError(
