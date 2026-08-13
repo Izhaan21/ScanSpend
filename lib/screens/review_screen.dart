@@ -5,6 +5,7 @@ import '../providers/expense_provider.dart';
 import '../models/expense_model.dart';
 import '../models/item_model.dart';
 import 'scan_screen.dart';
+import '../widgets/premium_background.dart';
 
 class ReviewScreen extends StatefulWidget {
   final String? imagePath;
@@ -21,19 +22,27 @@ class _ReviewScreenState extends State<ReviewScreen> {
   final FocusNode _totalFocusNode = FocusNode();
   String? _selectedCategory;
 
+  // Minimalist Premium Dark Palette
+  static const Color _bg         = Color(0xFF090E17);
+  static const Color _cardBg     = Color(0xFF141415);
+  static const Color _cardHeader = Color(0xFF1C1C1E);
+  static const Color _primary    = Color(0xFF2563EB);
+  static const Color _secondary  = Color(0xFF06B6D4);
+  static const Color _text       = Color(0xFFFFFFFF);
+  static const Color _textSub    = Color(0xFFCBD5E1);
+  static const Color _textMuted  = Color(0xFF94A3B8);
+  static const Color _border     = Colors.transparent;
+
   @override
   void initState() {
     super.initState();
-    // Initialise controller FIRST so the post-frame callback can safely write to it
     _totalController = TextEditingController();
-    // Populate with data once the first frame has built and the provider is ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final expense = context.read<ExpenseProvider>().currentExpense;
       if (expense != null && mounted) {
         _totalController.text = expense.total.toStringAsFixed(2);
-        setState(() {
-          _selectedCategory = expense.category;
-        });
+        _memoController.text = expense.memo;
+        setState(() => _selectedCategory = expense.category);
       }
     });
   }
@@ -46,46 +55,43 @@ class _ReviewScreenState extends State<ReviewScreen> {
     super.dispose();
   }
 
-  void _onSave(BuildContext context) async {
+  Future<void> _onSave(BuildContext context) async {
     final provider = context.read<ExpenseProvider>();
     if (provider.currentExpense == null) return;
 
-    // Apply any pending category change
     if (_selectedCategory != null &&
         _selectedCategory != provider.currentExpense!.category) {
       provider.updateCategory(_selectedCategory!);
     }
-
     provider.updateCurrentExpense(
       provider.currentExpense!.copyWith(memo: _memoController.text),
     );
     try {
       await provider.saveExpense();
       if (context.mounted) {
-        // Pop back to the main navigation (past the scan screen)
         Navigator.of(context).popUntil((route) => route.isFirst);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: const Row(children: [
-            Icon(Icons.check_circle, color: Color(0xFF89F5E7), size: 18),
-            SizedBox(width: 10),
-            Text('Receipt saved successfully!',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            SizedBox(width: 12),
+            Text('Receipt saved successfully',
+                style: TextStyle(fontWeight: FontWeight.w500, color: Colors.white)),
           ]),
-          backgroundColor: const Color(0xFF131B2E),
+          backgroundColor: const Color(0xFF10B981),
           behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           duration: const Duration(seconds: 3),
         ));
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Error saving: $e'),
-          backgroundColor: const Color(0xFFBA1A1A),
+          content: Text('Error saving expense: $e', style: const TextStyle(fontWeight: FontWeight.w500)),
+          backgroundColor: const Color(0xFFEF4444),
           behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ));
       }
     }
@@ -94,57 +100,43 @@ class _ReviewScreenState extends State<ReviewScreen> {
   void _onRetake(BuildContext context) {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (_) => const ScanScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const ScanScreen()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.9),
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'ScanSpend',
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.more_vert, color: theme.colorScheme.onSurfaceVariant),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: SafeArea(
+    return PremiumBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
         child: Consumer<ExpenseProvider>(
           builder: (context, provider, child) {
             final expense = provider.currentExpense;
-
             if (expense == null) {
-              return const Center(child: Text('No expense found to review.'));
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.receipt_long_outlined, size: 64, color: _textMuted),
+                    const SizedBox(height: 16),
+                    const Text('No expense to review.', style: TextStyle(color: _textSub, fontSize: 16, fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(backgroundColor: _primary, foregroundColor: _text),
+                      child: const Text('Go Back'),
+                    )
+                  ],
+                ),
+              );
             }
 
-            // Sync category from provider if not yet set locally
             _selectedCategory ??= expense.category;
 
-            // Auto-sync the total field when item prices change,
-            // but only when the field is not actively being edited.
             final providerTotalStr = expense.total.toStringAsFixed(2);
             if (!_totalFocusNode.hasFocus &&
                 _totalController.text != providerTotalStr) {
-              // Schedule after this build frame to avoid setState-during-build
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted && !_totalFocusNode.hasFocus) {
                   _totalController.text = providerTotalStr;
@@ -154,144 +146,153 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
             return Column(
               children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44, height: 44,
+                        decoration: BoxDecoration(
+                          color: _cardBg,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: _border),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_back_rounded, color: _text, size: 20),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Text(
+                          'Review',
+                          style: TextStyle(color: _text, fontSize: 24, fontWeight: FontWeight.w600, letterSpacing: -0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0, bottom: 32.0),
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 1. Receipt Preview Card
-                        _buildPreviewCard(theme, expense.merchantName, expense.date.toString().substring(0, 10), widget.imagePath),
+                        _buildPreviewCard(expense),
                         const SizedBox(height: 24),
 
-                        // 2. Category & Meta
-                        Text(
-                          'Expense Category',
-                          style: theme.textTheme.labelMedium?.copyWith(color: const Color(0xFF45464D)),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildCategoryChips(theme, provider),
-                        const SizedBox(height: 32),
-
-                        // 3. Line Items Section
-                        _buildLineItemsSection(theme, expense, provider),
+                        _buildMerchantInfoCard(expense, provider),
                         const SizedBox(height: 24),
 
-                        // 4. Notes / Memo
-                        Text(
-                          'Memo (Optional)',
-                          style: theme.textTheme.labelMedium?.copyWith(color: const Color(0xFF45464D)),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFC6C6CD)), // outline-variant
-                          ),
-                          child: TextField(
-                            controller: _memoController,
-                            maxLines: 3,
-                            decoration: InputDecoration(
-                              hintText: 'Add details about this expense...',
-                              hintStyle: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF76777D)),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.all(16),
-                            ),
-                          ),
-                        ),
+                        _sectionLabel('Currency'),
+                        const SizedBox(height: 12),
+                        _buildCurrencyChips(expense, provider),
+                        const SizedBox(height: 24),
+
+                        _sectionLabel('Category'),
+                        const SizedBox(height: 12),
+                        _buildCategoryChips(provider),
+                        const SizedBox(height: 24),
+
+                        _buildLineItemsSection(expense, provider),
+                        const SizedBox(height: 24),
+
+                        if (expense.subtotal > 0 || expense.tax > 0 || expense.discount > 0)
+                          _buildFinancialSummary(expense),
+                        if (expense.subtotal > 0 || expense.tax > 0 || expense.discount > 0)
+                          const SizedBox(height: 24),
+
+                        _sectionLabel('Notes'),
+                        const SizedBox(height: 12),
+                        _buildMemoField(),
                       ],
                     ),
                   ),
                 ),
-                
-                // Bottom Actions Layer
+
                 if (provider.isLoading)
-                   const Padding(
-                     padding: EdgeInsets.all(24.0),
-                     child: Center(child: CircularProgressIndicator()),
-                   )
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    child: const Center(child: CircularProgressIndicator(color: _primary)),
+                  )
                 else
-                   _buildBottomActions(theme, context),
+                  _buildBottomActions(context),
               ],
             );
           },
         ),
       ),
-    );
+    ));
   }
 
-  Widget _buildPreviewCard(ThemeData theme, String storeName, String dateStr, String? imagePath) {
+  Widget _sectionLabel(String label) => Text(
+    label,
+    style: const TextStyle(color: _textMuted, fontSize: 14, fontWeight: FontWeight.w500),
+  );
+
+  Widget _buildPreviewCard(Expense expense) {
+    final dateStr = expense.date.toString().substring(0, 10);
     return Container(
-      height: 192,
+      height: 160,
       decoration: BoxDecoration(
-        color: const Color(0xFFECEEF0),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFC6C6CD)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _border),
       ),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // ── Actual receipt image (or placeholder) ──────────────────────
           ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: imagePath != null && File(imagePath).existsSync()
+            borderRadius: BorderRadius.circular(23),
+            child: widget.imagePath != null && File(widget.imagePath!).existsSync()
                 ? Image.file(
-                    File(imagePath),
+                    File(widget.imagePath!),
                     fit: BoxFit.cover,
-                    color: Colors.black.withValues(alpha: 0.3),
+                    color: Colors.black.withValues(alpha: 0.2),
                     colorBlendMode: BlendMode.darken,
                   )
                 : Container(
-                    color: const Color(0xFFD0D5DD),
-                    child: const Icon(
-                      Icons.receipt_long,
-                      size: 64,
-                      color: Color(0xFF98A2B3),
+                    color: _cardHeader,
+                    child: const Center(
+                      child: Icon(Icons.receipt_long_rounded, size: 48, color: _textMuted),
                     ),
                   ),
           ),
-          // ── Overlay badge ───────────────────────────────────────────────
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.92),
+                color: _bg.withValues(alpha: 0.95),
                 borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
+                  bottomLeft: Radius.circular(23), bottomRight: Radius.circular(23),
                 ),
+                border: const Border(top: BorderSide(color: _border, width: 1)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.check_circle, color: Color(0xFF006A61), size: 18),
-                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: _primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.auto_awesome_rounded, color: _primary, size: 16),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          'Data Extracted Successfully',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onSurface,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          '$storeName  •  $dateStr',
-                          style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        const Text('Data extracted',
+                            style: TextStyle(color: _text, fontSize: 14, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 2),
+                        Text('${expense.merchantName}  •  $dateStr',
+                            style: const TextStyle(color: _textMuted, fontSize: 13, fontWeight: FontWeight.w400),
+                            overflow: TextOverflow.ellipsis),
                       ],
                     ),
                   ),
@@ -304,25 +305,127 @@ class _ReviewScreenState extends State<ReviewScreen> {
     );
   }
 
-  Widget _buildCategoryChips(ThemeData theme, ExpenseProvider provider) {
-    // ── Full category set matching AIService output ───────────────────────────
-    const categoryIcons = <String, IconData>{
-      'Healthcare': Icons.local_hospital_outlined,
-      'Food & Dining': Icons.restaurant_outlined,
-      'Groceries': Icons.shopping_cart_outlined,
-      'Transport': Icons.directions_car_outlined,
-      'Electronics': Icons.devices_outlined,
-      'Shopping': Icons.shopping_bag_outlined,
-      'Utilities': Icons.bolt_outlined,
-      'Other': Icons.category_outlined,
-    };
+  Widget _buildMerchantInfoCard(Expense expense, ExpenseProvider provider) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+            decoration: const BoxDecoration(
+              color: _cardHeader,
+              borderRadius: BorderRadius.only(topLeft: Radius.circular(23), topRight: Radius.circular(23)),
+              border: Border(bottom: BorderSide(color: _border)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.storefront_rounded, size: 20, color: _primary),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    initialValue: expense.merchantName,
+                    style: const TextStyle(color: _text, fontSize: 16, fontWeight: FontWeight.w600),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none, isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                      hintText: 'Merchant Name',
+                      hintStyle: TextStyle(color: _textMuted),
+                    ),
+                    onChanged: provider.updateMerchantName,
+                  ),
+                ),
+                const Icon(Icons.edit_outlined, size: 18, color: _textMuted),
+              ],
+            ),
+          ),
+          _infoRow(Icons.calendar_today_rounded, 'Date',
+              '${expense.date.day}/${expense.date.month}/${expense.date.year}'),
+          if (expense.address.isNotEmpty)
+            _infoRow(Icons.location_on_rounded, 'Address', expense.address),
+          if (expense.phone.isNotEmpty)
+            _infoRow(Icons.phone_rounded, 'Phone', expense.phone),
+          if (expense.receiptNumber.isNotEmpty)
+            _infoRow(Icons.receipt_rounded, 'Receipt #', expense.receiptNumber),
+          if (expense.paymentMethod.isNotEmpty)
+            _infoRow(Icons.payment_rounded, 'Payment', expense.paymentMethod,
+                isLast: true),
+        ],
+      ),
+    );
+  }
 
-    // Normalise the incoming category to match the chip keys
-    String normalizedCat = _normaliseCategory(_selectedCategory ?? 'Other');
+  Widget _infoRow(IconData icon, String label, String value, {bool isLast = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        border: isLast ? null : const Border(bottom: BorderSide(color: _border)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: _textMuted),
+          const SizedBox(width: 16),
+          Text(label, style: const TextStyle(color: _textMuted, fontSize: 14, fontWeight: FontWeight.w500)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(value,
+                style: const TextStyle(color: _text, fontSize: 14, fontWeight: FontWeight.w500),
+                textAlign: TextAlign.right,
+                overflow: TextOverflow.ellipsis),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildCurrencyChips(Expense expense, ExpenseProvider provider) {
+    const currencies = ['\$', 'Rs', '£', '€', 'AED', 'SAR'];
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: 12, runSpacing: 12,
+      children: currencies.map((curr) {
+        final isSelected = expense.currency == curr;
+        return GestureDetector(
+          onTap: () => provider.updateCurrency(curr),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              color: isSelected ? _primary : _cardBg,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isSelected ? _primary : _border),
+            ),
+            child: Text(
+              curr,
+              style: TextStyle(
+                color: isSelected ? Colors.white : _textSub,
+                fontSize: 15,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildCategoryChips(ExpenseProvider provider) {
+    const categoryIcons = <String, IconData>{
+      'Healthcare':   Icons.local_hospital_rounded,
+      'Food & Dining': Icons.restaurant_rounded,
+      'Groceries':    Icons.shopping_cart_rounded,
+      'Transport':    Icons.directions_car_rounded,
+      'Electronics':  Icons.devices_rounded,
+      'Shopping':     Icons.shopping_bag_rounded,
+      'Utilities':    Icons.bolt_rounded,
+      'Other':        Icons.category_rounded,
+    };
+    final normalizedCat = _normaliseCategory(_selectedCategory ?? 'Other');
+    return Wrap(
+      spacing: 12, runSpacing: 12,
       children: categoryIcons.entries.map((entry) {
         final isSelected = normalizedCat == entry.key;
         return GestureDetector(
@@ -330,185 +433,116 @@ class _ReviewScreenState extends State<ReviewScreen> {
             setState(() => _selectedCategory = entry.key);
             provider.updateCategory(entry.key);
           },
-          child: _buildChip(theme, entry.value, entry.key, isSelected),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: isSelected ? _primary.withValues(alpha: 0.15) : _cardBg,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isSelected ? _primary : _border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(entry.value, size: 18, color: isSelected ? _primary : _textMuted),
+                const SizedBox(width: 8),
+                Text(entry.key,
+                    style: TextStyle(
+                      color: isSelected ? _text : _textSub,
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    )),
+              ],
+            ),
+          ),
         );
       }).toList(),
     );
   }
 
-  String _normaliseCategory(String activeCategory) {
-    final lower = activeCategory.toLowerCase();
-    if (lower.contains('health') || lower.contains('medical') || lower.contains('pharma') || lower.contains('lab')) {
-      return 'Healthcare';
-    } else if (lower.contains('food') || lower.contains('dining') || lower.contains('restaurant') || lower.contains('cafe')) {
-      return 'Food & Dining';
-    } else if (lower.contains('grocer') || lower.contains('supermark') || lower.contains('mart')) {
-      return 'Groceries';
-    } else if (lower.contains('transport') || lower.contains('travel') || lower.contains('uber') || lower.contains('taxi')) {
-      return 'Transport';
-    } else if (lower.contains('electr')) {
-      return 'Electronics';
-    } else if (lower.contains('shop') || lower.contains('retail') || lower.contains('supplies')) {
-      return 'Shopping';
-    } else if (lower.contains('util') || lower.contains('electric') || lower.contains('gas') || lower.contains('water') || lower.contains('internet')) {
-      return 'Utilities';
-    }
-    const validCats = {'Healthcare', 'Food & Dining', 'Groceries', 'Transport', 'Electronics', 'Shopping', 'Utilities', 'Other'};
-    return validCats.contains(activeCategory) ? activeCategory : 'Other';
-  }
-
-  Widget _buildChip(ThemeData theme, IconData icon, String label, bool isSelected) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF86F2E4) : Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isSelected ? const Color(0xFF006A61).withValues(alpha: 0.3) : const Color(0xFFC6C6CD),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18, color: isSelected ? const Color(0xFF006F66) : const Color(0xFF45464D)),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: isSelected ? const Color(0xFF006F66) : const Color(0xFF45464D),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLineItemsSection(ThemeData theme, Expense expense, ExpenseProvider provider) {
+  Widget _buildLineItemsSection(Expense expense, ExpenseProvider provider) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFC6C6CD)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _border),
       ),
       child: Column(
         children: [
-          // Header
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: const BoxDecoration(
-              color: Color(0xFFF2F4F6), // surface-container-low
-              borderRadius: BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
-              border: Border(bottom: BorderSide(color: Color(0xFFC6C6CD))),
+              color: _cardHeader,
+              borderRadius: BorderRadius.only(topLeft: Radius.circular(23), topRight: Radius.circular(23)),
+              border: Border(bottom: BorderSide(color: _border)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'LINE ITEMS',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: const Color(0xFF45464D),
-                    letterSpacing: 1.5,
+                const Text('Items', style: TextStyle(color: _text, fontSize: 15, fontWeight: FontWeight.w600)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ),
-                Text(
-                  '${expense.items.length} items found',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: const Color(0xFF006A61), // secondary
-                    fontSize: 12,
-                  ),
+                  child: Text('${expense.items.length}',
+                      style: const TextStyle(color: _primary, fontSize: 13, fontWeight: FontWeight.w600)),
                 ),
               ],
             ),
           ),
-          
-          // Items
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Row(
+              children: [
+                const Expanded(flex: 4, child: Text('Item', style: TextStyle(color: _textMuted, fontSize: 13, fontWeight: FontWeight.w500))),
+                const SizedBox(width: 50, child: Text('Qty', textAlign: TextAlign.center, style: TextStyle(color: _textMuted, fontSize: 13, fontWeight: FontWeight.w500))),
+                SizedBox(width: 90, child: Text('Price', textAlign: TextAlign.right, style: TextStyle(color: _textMuted, fontSize: 13, fontWeight: FontWeight.w500))),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
           ...expense.items.asMap().entries.map((entry) {
-             final int index = entry.key;
-             final Item item = entry.value;
-             return Column(
-               children: [
-                 _buildEditableItem(
-                   theme,
-                   item.name,
-                   item.price.toStringAsFixed(2),
-                   false,
-                   onNameChanged: (value) {
-                     provider.updateItemAt(index, name: value);
-                   },
-                   onPriceChanged: (value) {
-                     final parsed = double.tryParse(value);
-                     if (parsed != null) {
-                       provider.updateItemAt(index, price: parsed);
-                     }
-                   },
-                 ),
-                 if (index < expense.items.length - 1)
-                   const Divider(height: 1, thickness: 1, color: Color(0xFFC6C6CD)),
-               ],
-             );
+            final index = entry.key;
+            final item = entry.value;
+            return Column(
+              children: [
+                _buildEditableItem(item, index, provider),
+                if (index < expense.items.length - 1)
+                  const Divider(height: 1, color: _border, indent: 20, endIndent: 20),
+              ],
+            );
           }),
-          // Total
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: const BoxDecoration(
-              color: Color(0xFF131B2E), // primary-container
-              borderRadius: BorderRadius.only(bottomLeft: Radius.circular(12), bottomRight: Radius.circular(12)),
+              color: Color(0xFF0D1424),
+              borderRadius: BorderRadius.only(bottomLeft: Radius.circular(23), bottomRight: Radius.circular(23)),
+              border: Border(top: BorderSide(color: _border)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Total Amount',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 20,
+                const Text('Total Amount', style: TextStyle(color: _text, fontSize: 16, fontWeight: FontWeight.w600)),
+                SizedBox(
+                  width: 150,
+                  child: TextField(
+                    controller: _totalController,
+                    focusNode: _totalFocusNode,
+                    textAlign: TextAlign.right,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: const TextStyle(color: _primary, fontSize: 20, fontWeight: FontWeight.w600),
+                    decoration: InputDecoration(
+                      prefixText: '${expense.currency} ',
+                      prefixStyle: const TextStyle(color: _textMuted, fontWeight: FontWeight.w500, fontSize: 18),
+                      border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero,
+                    ),
+                    onChanged: (value) {
+                      final parsed = double.tryParse(value);
+                      if (parsed != null) provider.updateTotal(parsed);
+                    },
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    SizedBox(
-                      width: 120,
-                      child: TextField(
-                        controller: _totalController,
-                        focusNode: _totalFocusNode,
-                        textAlign: TextAlign.right,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        style: theme.textTheme.displaySmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        decoration: const InputDecoration(
-                          prefixText: '\$',
-                          prefixStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        onChanged: (value) {
-                          final parsed = double.tryParse(value);
-                          if (parsed != null) {
-                            provider.updateTotal(parsed);
-                          }
-                        },
-                      ),
-                    ),
-                    Text(
-                      'Tax included',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: const Color(0xFF7C839B), // on-primary-container
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -518,92 +552,156 @@ class _ReviewScreenState extends State<ReviewScreen> {
     );
   }
 
-  Widget _buildEditableItem(
-    ThemeData theme,
-    String name,
-    String price,
-    bool isItalic, {
-    ValueChanged<String>? onNameChanged,
-    ValueChanged<String>? onPriceChanged,
-  }) {
+  Widget _buildEditableItem(Item item, int index, ExpenseProvider provider) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            child: Column(
-               crossAxisAlignment: CrossAxisAlignment.start,
-               children: [
-                 Text(
-                   'Item Name',
-                   style: theme.textTheme.labelMedium?.copyWith(
-                     fontSize: 12,
-                     color: const Color(0xFF7C839B), // on-primary-container
-                   ),
-                 ),
-                 TextFormField(
-                   initialValue: name,
-                   style: theme.textTheme.bodyMedium?.copyWith(
-                     fontStyle: isItalic ? FontStyle.italic : FontStyle.normal,
-                   ),
-                   decoration: const InputDecoration(
-                     border: InputBorder.none,
-                     isDense: true,
-                     contentPadding: EdgeInsets.only(top: 4, bottom: 0),
-                   ),
-                   onChanged: onNameChanged,
-                 ),
-               ],
-             ),
+            flex: 4,
+            child: TextFormField(
+              initialValue: item.name,
+              style: const TextStyle(color: _text, fontSize: 14, fontWeight: FontWeight.w500),
+              decoration: const InputDecoration(
+                border: InputBorder.none, isDense: true,
+                contentPadding: EdgeInsets.zero,
+                hintText: 'Item name',
+                hintStyle: TextStyle(color: _textMuted),
+              ),
+              onChanged: (value) => provider.updateItemAt(index, name: value),
+            ),
           ),
-          const SizedBox(width: 16),
           SizedBox(
-            width: 80,
-            child: Column(
-               crossAxisAlignment: CrossAxisAlignment.end,
-               children: [
-                 Text(
-                   'Price',
-                   style: theme.textTheme.labelMedium?.copyWith(
-                     fontSize: 12,
-                     color: const Color(0xFF7C839B), // on-primary-container
-                   ),
-                 ),
-                 Row(
-                   mainAxisAlignment: MainAxisAlignment.end,
-                   children: [
-                     const Text('\$', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500)),
-                     Expanded(
-                       child: TextFormField(
-                         initialValue: price,
-                         textAlign: TextAlign.right,
-                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                         style: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
-                         decoration: const InputDecoration(
-                           border: InputBorder.none,
-                           isDense: true,
-                           contentPadding: EdgeInsets.only(top: 4, bottom: 0),
-                         ),
-                         onChanged: onPriceChanged,
-                       ),
-                     ),
-                   ],
-                 ),
-               ],
-             ),
+            width: 50,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _bg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _border),
+                ),
+                child: Text(
+                  'x${item.quantity}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: _primary, fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 90,
+            child: TextFormField(
+              initialValue: item.price.toStringAsFixed(2),
+              textAlign: TextAlign.right,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: const TextStyle(color: _text, fontSize: 15, fontWeight: FontWeight.w600),
+              decoration: const InputDecoration(
+                border: InputBorder.none, isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+              onChanged: (value) {
+                final parsed = double.tryParse(value);
+                if (parsed != null) provider.updateItemAt(index, price: parsed);
+              },
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBottomActions(ThemeData theme, BuildContext context) {
+  Widget _buildFinancialSummary(Expense expense) {
     return Container(
-      padding: const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        border: const Border(top: BorderSide(color: Color(0xFFE0E3E5))),
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: const BoxDecoration(
+              color: _cardHeader,
+              borderRadius: BorderRadius.only(topLeft: Radius.circular(23), topRight: Radius.circular(23)),
+              border: Border(bottom: BorderSide(color: _border)),
+            ),
+            child: const Row(children: [
+              Icon(Icons.summarize_rounded, size: 18, color: _primary),
+              SizedBox(width: 12),
+              Text('Summary', style: TextStyle(color: _text, fontSize: 15, fontWeight: FontWeight.w600)),
+            ]),
+          ),
+          if (expense.subtotal > 0)
+            _summaryRow('Subtotal', expense.subtotal, expense.currency),
+          if (expense.tax > 0)
+            _summaryRow('Tax', expense.tax, expense.currency),
+          if (expense.discount > 0)
+            _summaryRow('Discount', expense.discount, expense.currency, isDiscount: true),
+          _summaryRow('Total', expense.total, expense.currency, isTotal: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryRow(String label, double amount, String currency,
+      {bool isTotal = false, bool isDiscount = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        border: isTotal ? const Border(top: BorderSide(color: _border)) : null,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: TextStyle(
+                  color: isTotal ? _text : _textMuted,
+                  fontSize: isTotal ? 15 : 14,
+                  fontWeight: isTotal ? FontWeight.w600 : FontWeight.w500)),
+          Text(
+            isDiscount
+                ? '- $currency ${amount.abs().toStringAsFixed(2)}'
+                : '$currency ${amount.toStringAsFixed(2)}',
+            style: TextStyle(
+                color: isDiscount ? const Color(0xFF10B981) : (isTotal ? _primary : _text),
+                fontSize: isTotal ? 16 : 14,
+                fontWeight: isTotal ? FontWeight.w600 : FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMemoField() {
+    return Container(
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _border),
+      ),
+      child: TextField(
+        controller: _memoController,
+        maxLines: 3,
+        style: const TextStyle(color: _text, fontSize: 15, fontWeight: FontWeight.w500),
+        decoration: const InputDecoration(
+          hintText: 'Add notes...',
+          hintStyle: TextStyle(color: _textMuted),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.all(20),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomActions(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      decoration: const BoxDecoration(
+        color: _bg,
+        border: Border(top: BorderSide(color: _border)),
       ),
       child: Row(
         children: [
@@ -613,13 +711,10 @@ class _ReviewScreenState extends State<ReviewScreen> {
               onPressed: () => _onRetake(context),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                side: const BorderSide(color: Color(0xFF76777D)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                side: const BorderSide(color: _border, width: 1.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
-              child: Text(
-                'Retake',
-                style: theme.textTheme.headlineMedium?.copyWith(fontSize: 16),
-              ),
+              child: const Text('Retake', style: TextStyle(color: _textSub, fontSize: 15, fontWeight: FontWeight.w600)),
             ),
           ),
           const SizedBox(width: 16),
@@ -628,23 +723,30 @@ class _ReviewScreenState extends State<ReviewScreen> {
             child: ElevatedButton(
               onPressed: () => _onSave(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+                backgroundColor: _primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
-              child: Text(
-                'Save Expense',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontSize: 16,
-                  color: Colors.white,
-                ),
-              ),
+              child: const Text('Save', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _normaliseCategory(String activeCategory) {
+    final lower = activeCategory.toLowerCase();
+    if (lower.contains('health') || lower.contains('medical') || lower.contains('pharma') || lower.contains('lab')) return 'Healthcare';
+    if (lower.contains('food') || lower.contains('dining') || lower.contains('restaurant') || lower.contains('cafe')) return 'Food & Dining';
+    if (lower.contains('grocer') || lower.contains('supermark') || lower.contains('mart')) return 'Groceries';
+    if (lower.contains('transport') || lower.contains('travel') || lower.contains('uber') || lower.contains('taxi')) return 'Transport';
+    if (lower.contains('electr')) return 'Electronics';
+    if (lower.contains('shop') || lower.contains('retail') || lower.contains('supplies')) return 'Shopping';
+    if (lower.contains('util') || lower.contains('electric') || lower.contains('gas') || lower.contains('water') || lower.contains('internet')) return 'Utilities';
+    const validCats = {'Healthcare', 'Food & Dining', 'Groceries', 'Transport', 'Electronics', 'Shopping', 'Utilities', 'Other'};
+    return validCats.contains(activeCategory) ? activeCategory : 'Other';
   }
 }

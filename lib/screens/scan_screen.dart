@@ -5,9 +5,11 @@ import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import '../providers/expense_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/ai_service.dart';
 import '../services/ocr_service.dart';
 import 'review_screen.dart';
+import '../widgets/premium_background.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -18,22 +20,18 @@ class ScanScreen extends StatefulWidget {
 
 class _ScanScreenState extends State<ScanScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
-  // ── Services ──────────────────────────────────────────────────────────────
   final ImagePicker _picker = ImagePicker();
   final AIService _aiService = AIService();
   final OCRService _ocrService = OCRService();
 
-  // ── Camera ─────────────────────────────────────────────────────────────────
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
   bool _isFlashOn = false;
   String? _imagePath;
 
-  // ── State ──────────────────────────────────────────────────────────────────
   bool _isProcessing = false;
   String _loadingMessage = '';
 
-  // ── Animations ─────────────────────────────────────────────────────────────
   late AnimationController _scanLineController;
   late Animation<double> _scanLineAnim;
   late AnimationController _captureFlashController;
@@ -41,24 +39,28 @@ class _ScanScreenState extends State<ScanScreen>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnim;
 
-  static const Color _accentColor = Color(0xFF89F5E7);
+  // Minimalist Premium Dark Palette
+  static const Color _bg         = Color(0xFF090E17);
+  static const Color _cardBg     = Color(0xFF141415);
+  static const Color _primary    = Color(0xFF2563EB);
+  static const Color _secondary  = Color(0xFF06B6D4);
+  static const Color _border     = Colors.transparent;
+  static const Color _textMuted  = Color(0xFF94A3B8);
+  static const Color _text       = Color(0xFFFFFFFF);
 
-  // ── Lifecycle ──────────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // Scanning line animation (repeating up-down)
     _scanLineController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-    _scanLineAnim = Tween<double>(begin: 0.1, end: 0.85).animate(
+    _scanLineAnim = Tween<double>(begin: 0.1, end: 0.88).animate(
       CurvedAnimation(parent: _scanLineController, curve: Curves.easeInOut),
     );
 
-    // Capture flash feedback
     _captureFlashController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -67,12 +69,11 @@ class _ScanScreenState extends State<ScanScreen>
       CurvedAnimation(parent: _captureFlashController, curve: Curves.easeOut),
     );
 
-    // Pulse ring around capture button
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
     )..repeat(reverse: true);
-    _pulseAnim = Tween<double>(begin: 0.7, end: 1.0).animate(
+    _pulseAnim = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
@@ -103,15 +104,60 @@ class _ScanScreenState extends State<ScanScreen>
     super.dispose();
   }
 
-  // ── Camera Init ────────────────────────────────────────────────────────────
   Future<void> _initCamera() async {
-    final status = await Permission.camera.request();
-    if (!status.isGranted) {
-      if (mounted) {
-        _showError('Camera permission denied. Please enable it in settings.');
+    final locStatus = await Permission.location.status;
+    final camStatus = await Permission.camera.status;
+
+    if (!locStatus.isGranted || !camStatus.isGranted) {
+      if (!locStatus.isGranted && mounted) {
+        final proceed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF111A2E),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: const Row(children: [
+              Icon(Icons.location_on_rounded, color: Color(0xFF2563EB), size: 24),
+              SizedBox(width: 12),
+              Text('Location Required', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+            ]),
+            content: const Text(
+              'ScanSpend uses your location to automatically detect the correct local currency when scanning receipts abroad.',
+              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 15, height: 1.5),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Not Now', style: TextStyle(color: Color(0xFF94A3B8), fontWeight: FontWeight.w500)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Continue', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        );
+
+        if (proceed == true) {
+          await [Permission.camera, Permission.location].request();
+        } else {
+          await Permission.camera.request();
+        }
+      } else {
+        await [Permission.camera, Permission.location].request();
       }
+    }
+
+    final finalCamStatus = await Permission.camera.status;
+    if (!finalCamStatus.isGranted) {
+      if (mounted) _showError('Camera permission denied. Please enable it in system settings.');
       return;
     }
+
+    final finalLocStatus = await Permission.location.status;
+    if (finalLocStatus.isGranted && mounted) {
+      context.read<SettingsProvider>().triggerGPSCurrencyDetection();
+    }
+
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) return;
@@ -121,22 +167,20 @@ class _ScanScreenState extends State<ScanScreen>
       );
       _cameraController = CameraController(
         back,
-        ResolutionPreset.high,
+        ResolutionPreset.veryHigh, // higher res = more pixels per character
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.jpeg,
       );
       await _cameraController!.initialize();
-      // Set initial flash mode
       await _cameraController!.setFlashMode(
         _isFlashOn ? FlashMode.torch : FlashMode.off,
       );
       if (mounted) setState(() => _isCameraInitialized = true);
     } catch (e) {
-      if (mounted) _showError('Camera init failed: $e');
+      if (mounted) _showError('Camera initialization failed: $e');
     }
   }
 
-  // ── Flash Toggle ───────────────────────────────────────────────────────────
   Future<void> _toggleFlash() async {
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return;
@@ -152,7 +196,23 @@ class _ScanScreenState extends State<ScanScreen>
     }
   }
 
-  // ── Capture ────────────────────────────────────────────────────────────────
+  /// Tap-to-focus: convert a screen offset to a normalised camera point
+  /// and set focus + exposure at that location.
+  Future<void> _onTapToFocus(TapDownDetails details) async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return;
+    }
+    final RenderBox box = context.findRenderObject() as RenderBox;
+    final Offset local = box.globalToLocal(details.globalPosition);
+    final double x = local.dx / box.size.width;
+    final double y = local.dy / box.size.height;
+    final Offset point = Offset(x.clamp(0.0, 1.0), y.clamp(0.0, 1.0));
+    try {
+      await _cameraController!.setFocusPoint(point);
+      await _cameraController!.setExposurePoint(point);
+    } catch (_) {}
+  }
+
   Future<void> _captureImage() async {
     if (_cameraController == null ||
         !_cameraController!.value.isInitialized ||
@@ -160,7 +220,6 @@ class _ScanScreenState extends State<ScanScreen>
       return;
     }
 
-    // Flash feedback
     _captureFlashController.forward(from: 0).then((_) {
       _captureFlashController.reverse();
     });
@@ -168,24 +227,32 @@ class _ScanScreenState extends State<ScanScreen>
     try {
       setState(() {
         _isProcessing = true;
-        _loadingMessage = 'Capturing...';
+        _loadingMessage = 'Capturing image...';
       });
 
-      // Turn off torch before capture so it doesn't blow out the image
       if (_isFlashOn) {
         await _cameraController!.setFlashMode(FlashMode.auto);
       }
 
+      // Lock focus & exposure on centre before shooting
+      try {
+        await _cameraController!.setFocusMode(FocusMode.auto);
+        await _cameraController!.setExposureMode(ExposureMode.auto);
+        await _cameraController!.setFocusPoint(const Offset(0.5, 0.5));
+        await _cameraController!.setExposurePoint(const Offset(0.5, 0.5));
+        // Brief pause to let AF settle
+        await Future.delayed(const Duration(milliseconds: 350));
+      } catch (_) {}
+
       final XFile image = await _cameraController!.takePicture();
 
-      // Restore torch
       if (_isFlashOn) {
         await _cameraController!.setFlashMode(FlashMode.torch);
       }
 
       setState(() {
         _imagePath = image.path;
-        _loadingMessage = 'Analysing receipt with AI...';
+        _loadingMessage = 'Analysing receipt...';
       });
 
       await _analyseAndNavigate(image.path);
@@ -195,48 +262,48 @@ class _ScanScreenState extends State<ScanScreen>
     }
   }
 
-  // ── Gallery Pick ───────────────────────────────────────────────────────────
   Future<void> _pickFromGallery() async {
     if (_isProcessing) return;
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 90,
+        imageQuality: 100, // lossless — preserve every pixel of receipt text
       );
       if (image == null) return;
 
       setState(() {
         _imagePath = image.path;
         _isProcessing = true;
-        _loadingMessage = 'Analysing receipt with AI...';
+        _loadingMessage = 'Analysing receipt...';
       });
 
       await _analyseAndNavigate(image.path);
     } catch (e) {
-      _showError('Gallery pick failed: $e');
+      _showError('Gallery selection failed: $e');
       if (mounted) setState(() => _isProcessing = false);
     }
   }
 
-  // ── Core analysis + navigation ─────────────────────────────────────────────
   Future<void> _analyseAndNavigate(String imagePath) async {
     Map<String, dynamic>? result;
 
     try {
-      // ── Step 1: Gemini direct vision parse ───────────────────────────────
-      if (mounted) setState(() => _loadingMessage = '🔍 Reading receipt with AI…');
+      if (mounted) setState(() => _loadingMessage = 'Reading receipt with AI...');
       result = await _aiService.parseReceiptImage(imagePath);
-
     } catch (e) {
-      // Automatic fallback for all errors (e.g. rate limit, quota exceeded, invalid key)
-      debugPrint('Vision parsing failed: $e. Running OCR + local parser fallback...');
+      // Distinguish deliberate OCR-fallback sentinel from real errors.
+      final msg = e.toString();
+      if (msg.contains(AIService.kFallbackNeeded)) {
+        debugPrint('Vision pass: fallback needed — starting OCR pipeline...');
+      } else {
+        debugPrint('Vision parsing failed ($msg) — trying OCR fallback...');
+      }
       result = await _runOcrFallback(imagePath);
       if (result == null) return;
     }
 
     if (!mounted) return;
 
-    // ── Navigate to Review screen ─────────────────────────────────────────
     bool navigated = false;
     try {
       context.read<ExpenseProvider>().setCurrentExpenseFromJson(result);
@@ -249,7 +316,7 @@ class _ScanScreenState extends State<ScanScreen>
       );
     } catch (e) {
       debugPrint('Navigation to review failed: $e');
-      if (mounted) _showError('Could not open review screen. Please try again.');
+      if (mounted) _showError('Could not process the receipt. Please try again.');
     } finally {
       if (mounted) {
         setState(() {
@@ -261,11 +328,9 @@ class _ScanScreenState extends State<ScanScreen>
     }
   }
 
-  /// OCR fallback: runs ML Kit text recognition then sends text to Gemini.
-  /// Returns null (and resets state + shows an error) if both strategies fail.
   Future<Map<String, dynamic>?> _runOcrFallback(String imagePath) async {
     try {
-      if (mounted) setState(() => _loadingMessage = '📝 Running OCR scan…');
+      if (mounted) setState(() => _loadingMessage = 'Running OCR scan...');
       final rawText = await _ocrService.extractTextFromImage(imagePath);
 
       if (rawText.trim().isEmpty) {
@@ -276,19 +341,17 @@ class _ScanScreenState extends State<ScanScreen>
             _imagePath = null;
           });
           _showError(
-            'No text detected in the image.\n\n'
-            'Tips:\n• Ensure good lighting\n• Hold phone steady\n• Receipt should fill the frame',
+            'No receipt text detected.\n\n'
+            'Tips:\n• Ensure good lighting\n• Hold your device steady\n• Receipt should fill the frame',
           );
         }
         return null;
       }
 
-      if (mounted) setState(() => _loadingMessage = '🤖 Parsing OCR text with AI…');
+      if (mounted) setState(() => _loadingMessage = 'Parsing text with AI...');
       final result = await _aiService.parseReceiptText(rawText);
       return result;
-
     } catch (e) {
-      // Always reset processing state before returning null
       if (mounted) {
         setState(() {
           _isProcessing = false;
@@ -298,9 +361,8 @@ class _ScanScreenState extends State<ScanScreen>
         final msg = e.toString();
         if (msg.contains('QUOTA_EXCEEDED')) {
           _showError(
-            'Gemini API quota exceeded.\n\n'
-            'Your free-tier daily limit is reached.\n'
-            'Fix: Enable billing at console.cloud.google.com',
+            'Gemini AI limit reached.\n\n'
+            'Please check your Google Cloud Console billing.',
           );
         } else {
           _showError('Could not extract receipt data.\n\n${msg.replaceAll('Exception: ', '')}');
@@ -315,213 +377,176 @@ class _ScanScreenState extends State<ScanScreen>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        backgroundColor: const Color(0xFF1E2D4E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: const Color(0xFF111A2E),
         title: const Row(children: [
-          Icon(Icons.error_outline, color: Color(0xFFFF6B6B), size: 22),
-          SizedBox(width: 10),
-          Text('Scan Failed', style: TextStyle(color: Colors.white, fontSize: 16)),
+          Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 24),
+          SizedBox(width: 12),
+          Text('Error', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
         ]),
         content: Text(message,
-            style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 14, height: 1.5)),
+            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 15, height: 1.5)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK', style: TextStyle(color: Color(0xFF89F5E7))),
+            child: const Text('OK', style: TextStyle(color: _primary, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
     );
   }
 
-  // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // 1. Camera / Image preview
-          _buildCameraLayer(),
-
-          // 2. Dark mask + viewfinder (only when not showing captured image)
-          if (_imagePath == null) _buildViewfinderLayer(context),
-
-          // 3. Capture flash feedback overlay
-          _buildCaptureFlash(),
-
-          // 4. Top bar
-          _buildTopBar(context),
-
-          // 5. Bottom controls
-          if (!_isProcessing) _buildBottomControls(context),
-
-          // 6. Loading overlay
-          if (_isProcessing) _buildLoadingOverlay(),
-        ],
-      ),
-    );
-  }
-
-  // ── Camera layer ──────────────────────────────────────────────────────────
-  Widget _buildCameraLayer() {
-    if (_imagePath != null) {
-      return Image.file(
-        File(_imagePath!),
-        fit: BoxFit.cover,
-        color: Colors.black.withValues(alpha: 0.25),
-        colorBlendMode: BlendMode.darken,
-      );
-    }
-    if (_isCameraInitialized && _cameraController != null) {
-      return SizedBox.expand(
-        child: FittedBox(
-          fit: BoxFit.cover,
-          child: SizedBox(
-            width: _cameraController!.value.previewSize?.height ?? 1,
-            height: _cameraController!.value.previewSize?.width ?? 1,
-            child: CameraPreview(_cameraController!),
-          ),
-        ),
-      );
-    }
-    // Camera initializing placeholder
-    return Container(
-      color: Colors.black,
-      child: const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    return PremiumBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          fit: StackFit.expand,
           children: [
-            CircularProgressIndicator(color: _accentColor),
-            SizedBox(height: 16),
-            Text('Initialising camera...',
-                style: TextStyle(color: Colors.white70, fontSize: 14)),
+            _buildCameraLayer(),
+            if (_imagePath == null) _buildViewfinderLayer(context),
+            _buildCaptureFlash(),
+            _buildTopBar(context),
+            if (!_isProcessing) _buildBottomControls(context),
+            if (_isProcessing) _buildLoadingOverlay(),
           ],
         ),
       ),
     );
   }
 
-  // ── Viewfinder ─────────────────────────────────────────────────────────────
-  Widget _buildViewfinderLayer(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final vfWidth = size.width * 0.85;
-    final vfHeight = vfWidth * (4 / 3);
-    final vfLeft = (size.width - vfWidth) / 2;
-    // Estimate vertical center: viewfinder is inside a Column centered in the screen.
-    // Column = vfHeight + 24 + ~44 (pill) + 8 + ~24 (dot row) = vfHeight + 100
-    final colHeight = vfHeight + 100;
-    final vfTop = (size.height - colHeight) / 2;
-
-    return CustomPaint(
-      painter: _ScanOverlayPainter(
-        vfLeft: vfLeft,
-        vfTop: vfTop,
-        vfWidth: vfWidth,
-        vfHeight: vfHeight,
-        radius: 28,
-      ),
-      child: Center(
+  Widget _buildCameraLayer() {
+    if (_imagePath != null) {
+      return Image.file(
+        File(_imagePath!),
+        fit: BoxFit.cover,
+        color: Colors.black.withValues(alpha: 0.2),
+        colorBlendMode: BlendMode.darken,
+      );
+    }
+    if (_isCameraInitialized && _cameraController != null) {
+      return GestureDetector(
+        onTapDown: _onTapToFocus,
+        child: SizedBox.expand(
+          child: FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: _cameraController!.value.previewSize?.height ?? 1,
+              height: _cameraController!.value.previewSize?.width ?? 1,
+              child: CameraPreview(_cameraController!),
+            ),
+          ),
+        ),
+      );
+    }
+    return Container(
+      color: Colors.transparent,
+      child: const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-              Container(
-                width: vfWidth,
-                height: vfHeight,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.25), width: 1.5),
-                  color: Colors.transparent,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.0),
-                      spreadRadius: 0,
-                    ),
-                  ],
-                ),
-                child: Stack(
-                  children: [
-                    // Corner brackets
-                    _corner(top: true, left: true),
-                    _corner(top: true, left: false),
-                    _corner(top: false, left: true),
-                    _corner(top: false, left: false),
-                    // Animated scan line
-                    AnimatedBuilder(
-                      animation: _scanLineAnim,
-                      builder: (_, child) => Positioned(
-                        top: vfHeight * _scanLineAnim.value,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 2,
-                          decoration: const BoxDecoration(
-                            color: _accentColor,
-                            boxShadow: [
-                              BoxShadow(
-                                color: _accentColor,
-                                blurRadius: 12,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: const Text(
-                  'Align the receipt within the frame',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _accentColor,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'AUTODETECTING...',
-                    style: TextStyle(
-                      color: _accentColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            CircularProgressIndicator(color: _primary),
+            SizedBox(height: 16),
+            Text('Starting camera...',
+                style: TextStyle(color: _textMuted, fontSize: 15, fontWeight: FontWeight.w500)),
+          ],
         ),
       ),
     );
   }
 
+  Widget _buildViewfinderLayer(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final vfWidth = size.width * 0.85;
+    final vfHeight = vfWidth * (4 / 3);
+    final vfLeft = (size.width - vfWidth) / 2;
+    // Shift the viewfinder slightly up from the exact vertical center
+    final vfTop = (size.height - vfHeight) / 2 - 40;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        CustomPaint(
+          painter: _ScanOverlayPainter(
+            vfLeft: vfLeft,
+            vfTop: vfTop,
+            vfWidth: vfWidth,
+            vfHeight: vfHeight,
+            radius: 24,
+          ),
+        ),
+        Positioned(
+          left: vfLeft,
+          top: vfTop,
+          child: Container(
+            width: vfWidth,
+            height: vfHeight,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.1), width: 1.5),
+            ),
+            child: Stack(
+              children: [
+                _corner(top: true, left: true),
+                _corner(top: true, left: false),
+                _corner(top: false, left: true),
+                _corner(top: false, left: false),
+                AnimatedBuilder(
+                  animation: _scanLineAnim,
+                  builder: (_, child) => Positioned(
+                    top: vfHeight * _scanLineAnim.value,
+                    left: 12,
+                    right: 12,
+                    child: Container(
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: _primary.withValues(alpha: 0.8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _primary.withValues(alpha: 0.4),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          top: vfTop + vfHeight + 24,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF111A2E).withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: _border),
+              ),
+              child: const Text(
+                'Align receipt within frame',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _corner({required bool top, required bool left}) {
-    const double len = 28.0;
-    const double thick = 3.5;
-    const Color c = _accentColor;
+    const double len = 24.0;
+    const double thick = 3.0;
+    const Color c = Colors.white;
     return Positioned(
       top: top ? 0 : null,
       bottom: top ? null : 0,
@@ -532,83 +557,68 @@ class _ScanScreenState extends State<ScanScreen>
         height: len,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.only(
-            topLeft: (top && left) ? const Radius.circular(10) : Radius.zero,
-            topRight: (top && !left) ? const Radius.circular(10) : Radius.zero,
-            bottomLeft:
-                (!top && left) ? const Radius.circular(10) : Radius.zero,
-            bottomRight:
-                (!top && !left) ? const Radius.circular(10) : Radius.zero,
+            topLeft: (top && left) ? const Radius.circular(8) : Radius.zero,
+            topRight: (top && !left) ? const Radius.circular(8) : Radius.zero,
+            bottomLeft: (!top && left) ? const Radius.circular(8) : Radius.zero,
+            bottomRight: (!top && !left) ? const Radius.circular(8) : Radius.zero,
           ),
           border: Border(
-            top: top
-                ? const BorderSide(color: c, width: thick)
-                : BorderSide.none,
-            bottom: !top
-                ? const BorderSide(color: c, width: thick)
-                : BorderSide.none,
-            left: left
-                ? const BorderSide(color: c, width: thick)
-                : BorderSide.none,
-            right: !left
-                ? const BorderSide(color: c, width: thick)
-                : BorderSide.none,
+            top: top ? const BorderSide(color: c, width: thick) : BorderSide.none,
+            bottom: !top ? const BorderSide(color: c, width: thick) : BorderSide.none,
+            left: left ? const BorderSide(color: c, width: thick) : BorderSide.none,
+            right: !left ? const BorderSide(color: c, width: thick) : BorderSide.none,
           ),
         ),
       ),
     );
   }
 
-  // ── Capture flash ──────────────────────────────────────────────────────────
   Widget _buildCaptureFlash() {
     return AnimatedBuilder(
       animation: _captureFlashAnim,
       builder: (_, child) => IgnorePointer(
         child: Container(
-          color: Colors.white
-              .withValues(alpha: _captureFlashAnim.value * 0.6),
+          color: Colors.white.withValues(alpha: _captureFlashAnim.value * 0.7),
         ),
       ),
     );
   }
 
-  // ── Top bar ────────────────────────────────────────────────────────────────
   Widget _buildTopBar(BuildContext context) {
     return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
+      top: 0, left: 0, right: 0,
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Close
               _iconBtn(
                 icon: Icons.close_rounded,
                 onTap: () => Navigator.pop(context),
               ),
-              // Mode pill
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.45),
+                  color: const Color(0xFF111A2E).withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.15), width: 1),
+                  border: Border.all(color: _border),
                 ),
-                child: const Text(
-                  'DOCUMENT MODE',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    letterSpacing: 1.6,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.document_scanner_rounded, size: 16, color: _primary),
+                    SizedBox(width: 8),
+                    Text(
+                      'Scan receipt',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              // Flash toggle
               _iconBtn(
                 icon: _isFlashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
                 onTap: _toggleFlash,
@@ -628,110 +638,74 @@ class _ScanScreenState extends State<ScanScreen>
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 42,
-        height: 42,
+      child: Container(
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: active
-              ? _accentColor.withValues(alpha: 0.25)
-              : Colors.black.withValues(alpha: 0.3),
+              ? _primary.withValues(alpha: 0.2)
+              : const Color(0xFF111A2E).withValues(alpha: 0.9),
           border: Border.all(
-            color: active
-                ? _accentColor.withValues(alpha: 0.6)
-                : Colors.white.withValues(alpha: 0.15),
+            color: active ? _primary : _border,
             width: 1,
           ),
         ),
         child: Icon(
           icon,
-          color: active ? _accentColor : Colors.white,
+          color: active ? _primary : Colors.white,
           size: 20,
         ),
       ),
     );
   }
 
-  // ── Bottom controls ─────────────────────────────────────────────────────────
   Widget _buildBottomControls(BuildContext context) {
     return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
+      bottom: 0, left: 0, right: 0,
       child: Container(
-        padding: const EdgeInsets.only(top: 28, bottom: 36, left: 24, right: 24),
+        padding: const EdgeInsets.only(top: 32, bottom: 48, left: 24, right: 24),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
             colors: [
-              Colors.black.withValues(alpha: 0.85),
+              Colors.black.withValues(alpha: 0.8),
               Colors.transparent,
             ],
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Action row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Gallery
-                GestureDetector(
-                  onTap: _pickFromGallery,
-                  child: _secondaryBtn(Icons.photo_library_outlined, 'Gallery'),
-                ),
-                // Capture button
-                GestureDetector(
-                  onTap: _captureImage,
-                  child: _captureBtn(),
-                ),
-                // Multi-Scan (coming soon) with SOON badge
-                GestureDetector(
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text(
-                        '📂 Multi-Scan: Scan multiple receipts in one go — coming soon!',
-                      ),
-                      backgroundColor: Colors.grey.shade800,
-                      behavior: SnackBarBehavior.floating,
-                      margin: const EdgeInsets.all(16),
-                      duration: const Duration(seconds: 3),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
+            GestureDetector(
+              onTap: _pickFromGallery,
+              child: _secondaryBtn(Icons.photo_library_outlined, 'Gallery'),
+            ),
+            GestureDetector(
+              onTap: _captureImage,
+              child: _captureBtn(),
+            ),
+            GestureDetector(
+              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text(
+                    'Batch scanning coming soon',
                   ),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      _secondaryBtn(Icons.add_photo_alternate_outlined, 'Multi-Scan'),
-                      Positioned(
-                        top: -4,
-                        right: -4,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: _accentColor,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'SOON',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 7,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  backgroundColor: _cardBg,
+                  behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.all(24),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                 ),
-              ],
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  _secondaryBtn(Icons.auto_awesome_motion_rounded, 'Batch'),
+                ],
+              ),
             ),
           ],
         ),
@@ -748,20 +722,18 @@ class _ScanScreenState extends State<ScanScreen>
           height: 52,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white.withValues(alpha: 0.1),
-            border:
-                Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
+            color: const Color(0xFF111A2E).withValues(alpha: 0.9),
+            border: Border.all(color: _border),
           ),
-          child: Icon(icon, color: Colors.white, size: 22),
+          child: Icon(icon, color: Colors.white, size: 24),
         ),
         const SizedBox(height: 8),
         Text(
-          label.toUpperCase(),
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.7),
-            fontSize: 10,
-            letterSpacing: 1.0,
-            fontWeight: FontWeight.w600,
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -774,32 +746,23 @@ class _ScanScreenState extends State<ScanScreen>
       builder: (_, child) => Stack(
         alignment: Alignment.center,
         children: [
-          // Pulse ring
           Container(
-            width: 92 * _pulseAnim.value,
-            height: 92 * _pulseAnim.value,
+            width: 88 * _pulseAnim.value,
+            height: 88 * _pulseAnim.value,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.3 * _pulseAnim.value),
+                color: Colors.white.withValues(alpha: 0.3),
                 width: 2,
               ),
             ),
           ),
-          // Main button
           Container(
             width: 76,
             height: 76,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black38,
-                  blurRadius: 16,
-                  spreadRadius: 2,
-                ),
-              ],
             ),
             child: Padding(
               padding: const EdgeInsets.all(4),
@@ -807,16 +770,12 @@ class _ScanScreenState extends State<ScanScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                      color: Colors.black.withValues(alpha: 0.06), width: 3),
+                      color: Colors.black.withValues(alpha: 1), width: 3),
                 ),
                 child: Container(
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Colors.white, Color(0xFFE2E8F0)],
-                    ),
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -827,36 +786,29 @@ class _ScanScreenState extends State<ScanScreen>
     );
   }
 
-  // ── Loading overlay ────────────────────────────────────────────────────────
   Widget _buildLoadingOverlay() {
     return Container(
-      color: Colors.black.withValues(alpha: 0.65),
+      color: Colors.black.withValues(alpha: 0.6),
       child: Center(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+          padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1D1E),
+            color: _cardBg,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-                color: _accentColor.withValues(alpha: 0.3), width: 1),
+            border: Border.all(color: _border),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(
-                width: 48,
-                height: 48,
-                child: CircularProgressIndicator(
-                  color: _accentColor,
-                  strokeWidth: 3,
-                ),
+              const CircularProgressIndicator(
+                color: _primary,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               Text(
                 _loadingMessage.isNotEmpty ? _loadingMessage : 'Processing...',
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 15,
+                  fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -868,7 +820,6 @@ class _ScanScreenState extends State<ScanScreen>
   }
 }
 
-// ── Overlay painter: dark mask with transparent viewfinder cutout ─────────────
 class _ScanOverlayPainter extends CustomPainter {
   final double vfLeft;
   final double vfTop;
@@ -886,13 +837,11 @@ class _ScanOverlayPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = const Color(0xB3000000); // ~70% black
+    final paint = Paint()..color = const Color(0xB3000000); // 70% opacity black
 
-    // Full screen rect
     final fullPath = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
 
-    // Transparent cutout (rounded rect for viewfinder)
     final cutoutPath = Path()
       ..addRRect(
         RRect.fromRectAndRadius(
@@ -901,7 +850,6 @@ class _ScanOverlayPainter extends CustomPainter {
         ),
       );
 
-    // Punch the hole: full screen minus the cutout
     final overlayPath =
         Path.combine(PathOperation.difference, fullPath, cutoutPath);
 

@@ -31,10 +31,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
         if (isNowAuthenticated && !_wasAuthenticated) {
           _wasAuthenticated = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && authProvider.user != null) {
-              context
-                  .read<ExpenseProvider>()
-                  .fetchExpenses(authProvider.user!.uid);
+            if (!mounted) return;
+            if (authProvider.user != null) {
+              context.read<ExpenseProvider>().fetchExpenses(authProvider.user!.uid);
             }
           });
         }

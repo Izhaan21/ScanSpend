@@ -7,8 +7,9 @@ import '../providers/auth_provider.dart';
 import '../providers/expense_provider.dart';
 import '../providers/settings_provider.dart';
 import '../models/expense_model.dart';
+import '../widgets/premium_background.dart';
 
-// ── Category config ────────────────────────────────────────────────────────
+// ── Category Configuration ──────────────────────────────────────────
 class _CatConfig {
   final String label;
   final IconData icon;
@@ -19,43 +20,49 @@ class _CatConfig {
 _CatConfig _catFor(String category) {
   final c = category.toLowerCase();
   if (c.contains('dining') || c.contains('food') || c.contains('restaur')) {
-    return const _CatConfig('Food & Drink', Icons.restaurant, Color(0xFFFF6B6B));
-  } else if (c.contains('travel') || c.contains('transport') || c.contains('uber')) {
-    return const _CatConfig('Travel', Icons.flight_takeoff, Color(0xFF6C63FF));
+    return const _CatConfig('Food & Dining', Icons.restaurant_rounded, Color(0xFFFF6B6B));
+  } else if (c.contains('travel') || c.contains('transport') || c.contains('uber') || c.contains('flight')) {
+    return const _CatConfig('Travel & Transit', Icons.flight_takeoff_rounded, Color(0xFF8B5CF6));
   } else if (c.contains('medical') || c.contains('health') || c.contains('pharmacy') || c.contains('lab')) {
-    return const _CatConfig('Medical', Icons.local_hospital, Color(0xFF0D9488));
-  } else if (c.contains('groceri') || c.contains('supermark') || c.contains('supplies')) {
-    return const _CatConfig('Groceries', Icons.shopping_cart, Color(0xFFF59E0B));
-  } else if (c.contains('entertainment') || c.contains('cinema')) {
-    return const _CatConfig('Entertainment', Icons.movie, Color(0xFFEC4899));
-  } else if (c.contains('utility') || c.contains('electric') || c.contains('internet')) {
-    return const _CatConfig('Utilities', Icons.bolt, Color(0xFF3B82F6));
+    return const _CatConfig('Health & Medical', Icons.favorite_rounded, Color(0xFF10B981));
+  } else if (c.contains('groceri') || c.contains('supermark') || c.contains('supplies') || c.contains('store')) {
+    return const _CatConfig('Groceries & Retail', Icons.local_mall_rounded, Color(0xFFF59E0B));
+  } else if (c.contains('entertainment') || c.contains('cinema') || c.contains('movie')) {
+    return const _CatConfig('Entertainment', Icons.confirmation_number_rounded, Color(0xFFEC4899));
+  } else if (c.contains('utility') || c.contains('electric') || c.contains('internet') || c.contains('gas')) {
+    return const _CatConfig('Bills & Utilities', Icons.bolt_rounded, Color(0xFF3B82F6));
   }
-  return const _CatConfig('Other', Icons.receipt_long, Color(0xFF64748B));
+  return const _CatConfig('General Expense', Icons.receipt_long_rounded, Color(0xFF06B6D4));
 }
 
-// ── Donut Painter ──────────────────────────────────────────────────────────
 class _DonutPainter extends CustomPainter {
   final List<MapEntry<String, double>> segments;
   final List<Color> colors;
-  static const double _sw = 28;
+  static const double _sw = 22;
 
   _DonutPainter({required this.segments, required this.colors});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(_sw / 2, _sw / 2,
-        size.width - _sw, size.height - _sw);
+    final rect = Rect.fromLTWH(_sw / 2, _sw / 2, size.width - _sw, size.height - _sw);
+    
+    final trackPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = _sw
+      ..color = const Color(0xFF1E293B);
+    canvas.drawOval(rect, trackPaint);
+
     double start = -math.pi / 2;
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = _sw
-      ..strokeCap = StrokeCap.butt;
+      ..strokeCap = StrokeCap.round;
 
     for (int i = 0; i < segments.length; i++) {
       final sweep = segments[i].value * 2 * math.pi;
+      if (sweep <= 0.04) continue;
       paint.color = colors[i % colors.length];
-      canvas.drawArc(rect, start + 0.02, sweep - 0.04, false, paint);
+      canvas.drawArc(rect, start + 0.05, sweep - 0.1, false, paint);
       start += sweep;
     }
   }
@@ -64,7 +71,6 @@ class _DonutPainter extends CustomPainter {
   bool shouldRepaint(_DonutPainter old) => true;
 }
 
-// ── Dashboard Screen ───────────────────────────────────────────────────────
 class DashboardScreen extends StatefulWidget {
   final VoidCallback? onViewAllHistory;
   const DashboardScreen({super.key, this.onViewAllHistory});
@@ -74,74 +80,120 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  static const _primary = Color(0xFF006A61);
-  static const _dark = Color(0xFF131B2E);
+  // Minimalist Dark Palette
+  static const Color _bg         = Color(0xFF090E17);
+  static const Color _cardBg     = Color(0xFF141415);
+  static const Color _primary    = Color(0xFF2563EB);
+  static const Color _secondary  = Color(0xFF06B6D4);
+  static const Color _text       = Color(0xFFFFFFFF);
+  static const Color _textMuted  = Color(0xFF94A3B8);
+  static const Color _border     = Colors.transparent;
 
-  // ── Expense detail sheet ───────────────────────────────────────────────
-  void _showDetail(BuildContext ctx, Expense exp, String currencySymbol) {
-    final fmt = NumberFormat.currency(symbol: currencySymbol);
+  void _showDetail(BuildContext ctx, Expense exp, String fallbackCurrencySymbol) {
+    final sym = exp.currency.isNotEmpty ? exp.currency : fallbackCurrencySymbol;
+    final fmt = NumberFormat.currency(symbol: sym);
     final cat = _catFor(exp.category);
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
+      backgroundColor: const Color(0xFF0B1220),
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
       builder: (_) => DraggableScrollableSheet(
         expand: false,
-        initialChildSize: 0.55,
-        maxChildSize: 0.9,
+        initialChildSize: 0.6,
+        maxChildSize: 0.92,
         builder: (_, ctrl) => ListView(
           controller: ctrl,
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          padding: const EdgeInsets.fromLTRB(28, 16, 28, 40),
           children: [
             Center(
-              child: Container(width: 40, height: 4,
-                  decoration: BoxDecoration(color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2))),
-            ),
-            const SizedBox(height: 20),
-            Row(children: [
-              Container(width: 52, height: 52,
+              child: Container(
+                width: 48,
+                height: 4,
                 decoration: BoxDecoration(
-                  color: cat.color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+                  color: const Color(0xFF334155),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                child: Icon(cat.icon, color: cat.color, size: 26)),
-              const SizedBox(width: 16),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(exp.merchantName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Text(DateFormat('EEE, MMM d  •  hh:mm a').format(exp.date),
-                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
-              ])),
+              ),
+            ),
+            const SizedBox(height: 28),
+            Row(children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: cat.color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: cat.color.withValues(alpha: 0.4), width: 1.5),
+                ),
+                child: Icon(cat.icon, color: cat.color, size: 30),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(exp.merchantName, style: const TextStyle(color: _text, fontSize: 20, fontWeight: FontWeight.w600, letterSpacing: -0.2)),
+                  const SizedBox(height: 4),
+                  Text(DateFormat('EEE, MMMM d, yyyy  •  hh:mm a').format(exp.date),
+                      style: const TextStyle(color: _textMuted, fontSize: 13, fontWeight: FontWeight.w400)),
+                ]),
+              ),
             ]),
-            const SizedBox(height: 20),
+            const SizedBox(height: 28),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                  color: _primary, borderRadius: BorderRadius.circular(14)),
-              child: Column(children: [
-                const Text('Total Amount', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                const SizedBox(height: 4),
+                color: _primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: _primary.withValues(alpha: 0.3)),
+              ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Total amount', style: TextStyle(color: _secondary, fontSize: 13, fontWeight: FontWeight.w500)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _primary.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text('Verified', style: TextStyle(color: _secondary, fontSize: 11, fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 Text(fmt.format(exp.total),
-                    style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                    style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w700, letterSpacing: -0.8)),
               ]),
             ),
-            const SizedBox(height: 20),
-            _detailRow('Category', exp.category),
-            _detailRow('Status', exp.status.isNotEmpty ? exp.status : 'Captured'),
-            if (exp.memo.isNotEmpty) _detailRow('Memo', exp.memo),
+            const SizedBox(height: 28),
+            _detailRow('Expense Category', exp.category),
+            _detailRow('Verification Mode', exp.status.isNotEmpty ? exp.status : 'AI extraction'),
+            if (exp.memo.isNotEmpty) _detailRow('Notes', exp.memo),
             if (exp.items.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              const Text('Items', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF64748B))),
-              const SizedBox(height: 8),
-              ...exp.items.map((item) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Expanded(child: Text(item.name, style: const TextStyle(fontSize: 13))),
-                  Text(fmt.format(item.price), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                ]),
-              )),
+              const SizedBox(height: 22),
+              const Text('Receipt Items', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: _textMuted)),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF111927),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: _border),
+                ),
+                child: Column(
+                  children: exp.items.map((item) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      Expanded(child: Text(item.name, style: const TextStyle(color: _text, fontSize: 14, fontWeight: FontWeight.w500))),
+                      Text(fmt.format(item.price), style: const TextStyle(color: _text, fontSize: 15, fontWeight: FontWeight.w600)),
+                    ]),
+                  )).toList(),
+                ),
+              ),
             ],
           ],
         ),
@@ -150,14 +202,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _detailRow(String label, String value) => Padding(
-    padding: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.only(bottom: 16),
     child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
-      Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+      Text(label, style: const TextStyle(color: _textMuted, fontSize: 14, fontWeight: FontWeight.w400)),
+      Text(value, style: const TextStyle(color: _text, fontWeight: FontWeight.w500, fontSize: 14)),
     ]),
   );
 
-  // ── Build category data from expenses ──────────────────────────────────
   List<MapEntry<_CatConfig, double>> _categoryBreakdown(List<Expense> expenses) {
     final Map<String, double> totals = {};
     for (final e in expenses) {
@@ -166,27 +217,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
     final sorted = totals.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
     return sorted.map((entry) {
-      // Find matching config
       final configs = [
-        const _CatConfig('Food & Drink', Icons.restaurant, Color(0xFFFF6B6B)),
-        const _CatConfig('Travel', Icons.flight_takeoff, Color(0xFF6C63FF)),
-        const _CatConfig('Medical', Icons.local_hospital, Color(0xFF0D9488)),
-        const _CatConfig('Groceries', Icons.shopping_cart, Color(0xFFF59E0B)),
-        const _CatConfig('Entertainment', Icons.movie, Color(0xFFEC4899)),
-        const _CatConfig('Utilities', Icons.bolt, Color(0xFF3B82F6)),
-        const _CatConfig('Other', Icons.receipt_long, Color(0xFF64748B)),
+        const _CatConfig('Food & Dining', Icons.restaurant_rounded, Color(0xFFFF6B6B)),
+        const _CatConfig('Travel & Transit', Icons.flight_takeoff_rounded, Color(0xFF8B5CF6)),
+        const _CatConfig('Health & Medical', Icons.favorite_rounded, Color(0xFF10B981)),
+        const _CatConfig('Groceries & Retail', Icons.local_mall_rounded, Color(0xFFF59E0B)),
+        const _CatConfig('Entertainment', Icons.confirmation_number_rounded, Color(0xFFEC4899)),
+        const _CatConfig('Bills & Utilities', Icons.bolt_rounded, Color(0xFF3B82F6)),
+        const _CatConfig('General Expense', Icons.receipt_long_rounded, Color(0xFF06B6D4)),
       ];
       final cfg = configs.firstWhere((c) => c.label == entry.key,
-          orElse: () => const _CatConfig('Other', Icons.receipt_long, Color(0xFF64748B)));
+          orElse: () => const _CatConfig('General Expense', Icons.receipt_long_rounded, Color(0xFF06B6D4)));
       return MapEntry(cfg, entry.value);
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
+    return PremiumBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
         child: Consumer2<ExpenseProvider, SettingsProvider>(
           builder: (ctx, provider, settings, _) {
             final auth = ctx.read<AuthProvider>();
@@ -194,12 +245,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final currencySymbol = settings.currencySymbol;
             final fmt = NumberFormat.currency(symbol: currencySymbol);
 
-            // This month's expenses
             final now = DateTime.now();
             final thisMonth = expenses.where(
                 (e) => e.date.month == now.month && e.date.year == now.year).toList();
 
-            // Last month — handle January correctly (month 1 → previous month is Dec of prior year)
             final prevMonth = now.month == 1 ? 12 : now.month - 1;
             final prevYear = now.month == 1 ? now.year - 1 : now.year;
             final lastMonth = expenses.where(
@@ -218,37 +267,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final photoPath = settings.profilePhotoPath;
 
             return RefreshIndicator(
-              color: _primary,
+              color: _secondary,
+              backgroundColor: _cardBg,
               onRefresh: () async {
                 if (auth.user != null) {
                   await provider.fetchExpenses(auth.user!.uid);
                 }
               },
               child: CustomScrollView(slivers: [
+                if (provider.isLoading)
+                  SliverToBoxAdapter(child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    child: _buildHeader(ctx, userName, photoPath, settings, provider),
+                  )),
                 SliverToBoxAdapter(child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-                  child: _buildHeader(ctx, userName, photoPath, settings, provider),
-                )),
-                SliverToBoxAdapter(child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                   child: _buildSpendingCard(fmt, totalThis, changePct),
                 )),
                 if (expenses.isNotEmpty) ...[
                   SliverToBoxAdapter(child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                     child: _buildQuickStats(expenses, fmt),
                   )),
                   SliverToBoxAdapter(child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-                    child: _buildCategoryCard(catData, grandTotal),
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                    child: _buildCategoryCard(catData, grandTotal, fmt),
                   )),
                 ],
                 SliverToBoxAdapter(child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                   child: _buildRecentScans(ctx, expenses, currencySymbol, fmt),
                 )),
                 SliverToBoxAdapter(child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
                   child: _buildInsightsBanner(expenses, fmt, currencySymbol),
                 )),
               ]),
@@ -256,112 +307,104 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
         ),
       ),
+    ));
+  }
+
+  Widget _buildHeader(BuildContext ctx, String name, String? photoPath,
+      SettingsProvider settings, ExpenseProvider provider) {
+    if (!provider.isLoading) return const SizedBox.shrink();
+
+    return const Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(right: 14),
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2.5, color: _secondary),
+          ),
+        ),
+      ],
     );
   }
 
-  // ── Header ─────────────────────────────────────────────────────────────
-  Widget _buildHeader(BuildContext ctx, String name, String? photoPath,
-      SettingsProvider settings, ExpenseProvider provider) {
-    return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      Row(children: [
-        GestureDetector(
-          onTap: () {
-            // Navigate to profile via parent navigator — just show snack
-            ScaffoldMessenger.of(ctx).showSnackBar(
-              const SnackBar(content: Text('Go to Profile tab to manage your account'),
-                  duration: Duration(seconds: 2)));
-          },
-          child: Container(
-            width: 44, height: 44,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF89F5E7), width: 2),
-              color: _dark,
-            ),
-            child: ClipOval(child: photoPath != null
-                ? Image.file(File(photoPath), fit: BoxFit.cover)
-                : Center(child: Text(
-                    name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                    style: const TextStyle(color: Colors.white,
-                        fontWeight: FontWeight.bold, fontSize: 18)))),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Welcome back 👋', style: TextStyle(
-              color: Colors.grey.shade500, fontSize: 12)),
-          Text(name, style: const TextStyle(
-              fontWeight: FontWeight.bold, fontSize: 16)),
-        ]),
-      ]),
-      Row(children: [
-        Icon(settings.notificationsOn
-            ? Icons.notifications_outlined
-            : Icons.notifications_off_outlined,
-            color: settings.notificationsOn ? _primary : Colors.grey),
-        const SizedBox(width: 8),
-        if (provider.isLoading)
-          const SizedBox(width: 18, height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2, color: _primary)),
-      ]),
-    ]);
-  }
-
-  // ── Spending card ──────────────────────────────────────────────────────
   Widget _buildSpendingCard(NumberFormat fmt, double total, int changePct) {
     final isUp = changePct > 0;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF131B2E), Color(0xFF1E2D4E)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2563EB), Color(0xFF0B1220)],
         ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(
-            color: const Color(0xFF131B2E).withValues(alpha: 0.3),
-            blurRadius: 20, offset: const Offset(0, 8))],
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 20, offset: const Offset(0, 10)),
+        ],
       ),
-      child: Stack(clipBehavior: Clip.none, children: [
-        Positioned(right: -20, top: -20,
-          child: Container(width: 120, height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF89F5E7).withValues(alpha: 0.07)))),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('THIS MONTH  •  ${DateFormat('MMM yyyy').format(DateTime.now()).toUpperCase()}',
-              style: const TextStyle(color: Color(0xFF7C839B), fontSize: 11, letterSpacing: 1.5)),
-          const SizedBox(height: 10),
-          Text(fmt.format(total),
-              style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 12),
-          Row(children: [
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: isUp
-                    ? Colors.red.withValues(alpha: 0.15)
-                    : Colors.green.withValues(alpha: 0.15),
+                color: Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(isUp ? Icons.arrow_upward : Icons.arrow_downward,
-                    color: isUp ? Colors.redAccent : Colors.greenAccent, size: 13),
-                const SizedBox(width: 4),
-                Text('${changePct.abs()}% vs last month',
-                    style: TextStyle(
-                        color: isUp ? Colors.redAccent : Colors.greenAccent,
-                        fontSize: 12, fontWeight: FontWeight.w600)),
-              ]),
+              child: const Text(
+                'Monthly spend',
+                style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+              ),
             ),
-          ]),
-        ]),
+            Text(DateFormat('MMMM').format(DateTime.now()),
+                style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+          ],
+        ),
+        const SizedBox(height: 24),
+        Text(fmt.format(total),
+            style: const TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.w600, letterSpacing: -1.0, height: 1.1)),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isUp ? const Color(0xFFF43F5E).withValues(alpha: 0.2) : const Color(0xFF10B981).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(isUp ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                      color: isUp ? const Color(0xFFFDA4AF) : const Color(0xFF6EE7B7), size: 16),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text('${changePct.abs()}% vs last month',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: isUp ? const Color(0xFFFDA4AF) : const Color(0xFF6EE7B7),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500)),
+                  ),
+                ]),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), shape: BoxShape.circle),
+              child: const Icon(Icons.bar_chart_rounded, color: Colors.white, size: 20),
+            ),
+          ],
+        ),
       ]),
     );
   }
 
-  // ── Quick stats row ─────────────────────────────────────────────────────
   Widget _buildQuickStats(List<Expense> expenses, NumberFormat fmt) {
     final now = DateTime.now();
     final thisWeek = expenses.where((e) =>
@@ -369,35 +412,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final avgPerScan = expenses.isEmpty ? 0.0 : expenses.fold(0.0, (s, e) => s + e.total) / expenses.length;
 
     return Row(children: [
-      Expanded(child: _statBox('This Week', fmt.format(thisWeek.fold(0.0, (s, e) => s + e.total)), Icons.calendar_today_outlined)),
+      Expanded(child: _statModule('This week', fmt.format(thisWeek.fold(0.0, (s, e) => s + e.total)), Icons.calendar_today_rounded)),
       const SizedBox(width: 12),
-      Expanded(child: _statBox('Avg / Receipt', fmt.format(avgPerScan), Icons.receipt_outlined)),
+      Expanded(child: _statModule('Avg / scan', fmt.format(avgPerScan), Icons.receipt_long_rounded)),
       const SizedBox(width: 12),
-      Expanded(child: _statBox('Total Scans', '${expenses.length}', Icons.document_scanner_outlined)),
+      Expanded(child: _statModule('Receipts', '${expenses.length}', Icons.document_scanner_rounded)),
     ]);
   }
 
-  Widget _statBox(String label, String value, IconData icon) {
+  Widget _statModule(String label, String value, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _border),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, size: 18, color: _primary),
-        const SizedBox(height: 8),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-            overflow: TextOverflow.ellipsis),
-        const SizedBox(height: 2),
-        Text(label, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+        Icon(icon, size: 22, color: _textMuted),
+        const SizedBox(height: 16),
+        Text(value, style: const TextStyle(color: _text, fontWeight: FontWeight.w600, fontSize: 16, letterSpacing: -0.3),
+            overflow: TextOverflow.ellipsis, maxLines: 1),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(color: _textMuted, fontSize: 12, fontWeight: FontWeight.w400),
+            overflow: TextOverflow.ellipsis, maxLines: 1),
       ]),
     );
   }
 
-  // ── Category donut card ─────────────────────────────────────────────────
-  Widget _buildCategoryCard(List<MapEntry<_CatConfig, double>> catData, double grandTotal) {
+  Widget _buildCategoryCard(List<MapEntry<_CatConfig, double>> catData, double grandTotal, NumberFormat fmt) {
     if (catData.isEmpty) return const SizedBox.shrink();
 
     final top = catData.take(5).toList();
@@ -406,133 +449,144 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final topCat = top.first;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: _border),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Spend Categories',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 20),
+        const Text('Categories', style: TextStyle(color: _text, fontSize: 18, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 32),
         Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-          // Donut
-          SizedBox(width: 130, height: 130,
+          Container(
+            width: 120,
+            height: 120,
+            decoration: const BoxDecoration(shape: BoxShape.circle),
             child: Stack(alignment: Alignment.center, children: [
               CustomPaint(
-                  size: const Size(130, 130),
-                  painter: _DonutPainter(segments: segments, colors: colors)),
+                size: const Size(120, 120),
+                painter: _DonutPainter(segments: segments, colors: colors),
+              ),
               Column(mainAxisSize: MainAxisSize.min, children: [
-                Icon(topCat.key.icon, color: topCat.key.color, size: 20),
-                const SizedBox(height: 4),
-                Text(topCat.key.label,
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-                    textAlign: TextAlign.center),
+                const Text('Total', style: TextStyle(color: _textMuted, fontSize: 13, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 2),
+                Text(
+                  fmt.format(grandTotal),
+                  style: const TextStyle(color: _text, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.5),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ]),
             ]),
           ),
-          const SizedBox(width: 20),
-          // Legend
-          Expanded(child: Column(
-            children: top.map((entry) {
-              final pct = grandTotal > 0 ? (entry.value / grandTotal * 100).round() : 0;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(children: [
-                  Container(width: 10, height: 10,
+          const SizedBox(width: 24),
+          Expanded(
+            child: Column(
+              children: top.map((entry) {
+                final pct = grandTotal > 0 ? (entry.value / grandTotal * 100).round() : 0;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(children: [
+                    Container(
+                      width: 10,
+                      height: 10,
                       decoration: BoxDecoration(
-                          color: entry.key.color, shape: BoxShape.circle)),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(entry.key.label,
-                      style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)),
-                  Text('$pct%',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                ]),
-              );
-            }).toList(),
-          )),
+                        color: entry.key.color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(entry.key.label,
+                        style: const TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
+                    Text('$pct%', style: const TextStyle(color: _textMuted, fontSize: 13, fontWeight: FontWeight.w500)),
+                  ]),
+                );
+              }).toList(),
+            ),
+          ),
         ]),
       ]),
     );
   }
 
-  // ── Recent scans ────────────────────────────────────────────────────────
   Widget _buildRecentScans(BuildContext ctx, List<Expense> expenses,
       String currencySymbol, NumberFormat fmt) {
     final recent = expenses.take(5).toList();
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: _border),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          const Text('Recent Scans',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          if (expenses.length > 5)
-            TextButton(
-              onPressed: widget.onViewAllHistory,
-              style: TextButton.styleFrom(padding: EdgeInsets.zero,
-                  minimumSize: const Size(0, 0)),
-              child: const Text('View All', style: TextStyle(color: _primary, fontSize: 13)),
+          const Text('Recent transactions', style: TextStyle(color: _text, fontSize: 18, fontWeight: FontWeight.w600)),
+          if (expenses.isNotEmpty)
+            GestureDetector(
+              onTap: widget.onViewAllHistory,
+              child: const Text('View all', style: TextStyle(color: _secondary, fontSize: 14, fontWeight: FontWeight.w500)),
             ),
         ]),
-        const SizedBox(height: 12),
+        const SizedBox(height: 24),
         if (recent.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
             child: Center(child: Column(children: [
-              Icon(Icons.receipt_long_outlined, size: 40, color: Color(0xFFCBD5E1)),
-              SizedBox(height: 8),
-              Text('No scans yet', style: TextStyle(color: Color(0xFF94A3B8))),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _border),
+                ),
+                child: const Icon(Icons.receipt_long_rounded, size: 32, color: _textMuted),
+              ),
+              const SizedBox(height: 16),
+              const Text('No transactions yet', style: TextStyle(color: _text, fontSize: 16, fontWeight: FontWeight.w500)),
+              const SizedBox(height: 6),
+              const Text('Scan a receipt to get started',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: _textMuted, fontSize: 14)),
             ])),
           )
         else
           ...recent.map((exp) {
             final cat = _catFor(exp.category);
+            final expSym = exp.currency.isNotEmpty ? exp.currency : currencySymbol;
+            final expFmt = NumberFormat.currency(symbol: expSym);
             return GestureDetector(
               onTap: () => _showDetail(ctx, exp, currencySymbol),
               child: Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  color: const Color(0xFF141415),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(children: [
-                  Container(width: 42, height: 42,
+                  Container(
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
-                      color: cat.color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
+                      color: cat.color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Icon(cat.icon, color: cat.color, size: 20)),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(exp.merchantName,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                        overflow: TextOverflow.ellipsis),
-                    Text('${exp.category}  •  ${DateFormat('MMM d').format(exp.date)}',
-                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
-                  ])),
-                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                    Text(fmt.format(exp.total),
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                    const SizedBox(height: 3),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: _primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text('CAPTURED',
-                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800,
-                              color: _primary, letterSpacing: 0.5)),
-                    ),
-                  ]),
+                    child: Icon(cat.icon, color: cat.color, size: 22),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(exp.merchantName,
+                          style: const TextStyle(color: _text, fontWeight: FontWeight.w600, fontSize: 15),
+                          overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 4),
+                      Text(DateFormat('MMM d, yyyy').format(exp.date), style: const TextStyle(color: _textMuted, fontSize: 13)),
+                    ]),
+                  ),
+                  Text(expFmt.format(exp.total),
+                      style: const TextStyle(color: _text, fontWeight: FontWeight.w600, fontSize: 16)),
                 ]),
               ),
             );
@@ -541,50 +595,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ── Insights banner ─────────────────────────────────────────────────────
   Widget _buildInsightsBanner(List<Expense> expenses, NumberFormat fmt, String currencySymbol) {
-    // Find top category this month
     final now = DateTime.now();
     final thisMonth = expenses.where(
         (e) => e.date.month == now.month && e.date.year == now.year).toList();
 
     String message;
     if (thisMonth.isEmpty) {
-      message = 'Start scanning receipts to get AI-powered spending insights.';
+      message = 'Start scanning to unlock spending insights and tracking.';
     } else {
-      final catTotals = <String, double>{};
-      for (final e in thisMonth) {
-        final label = _catFor(e.category).label;
-        catTotals[label] = (catTotals[label] ?? 0) + e.total;
-      }
-      final topCat = catTotals.entries.reduce((a, b) => a.value > b.value ? a : b);
       final avg = thisMonth.fold(0.0, (s, e) => s + e.total) / thisMonth.length;
-      message = 'Your top category is "${topCat.key}" at ${fmt.format(topCat.value)}. '
-          'Average receipt: ${fmt.format(avg)}. Scan more to improve accuracy.';
+      message = 'You spend an average of ${fmt.format(avg)} per transaction this month.';
     }
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [_primary, _primary.withValues(alpha: 0.8)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
+        color: _primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: _primary.withValues(alpha: 0.2)),
       ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(width: 44, height: 44,
+      child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        Container(
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15), shape: BoxShape.circle),
-          child: const Icon(Icons.insights, color: Colors.white, size: 22)),
-        const SizedBox(width: 14),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Smart Insights',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-          const SizedBox(height: 6),
-          Text(message,
-              style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5)),
-        ])),
+            color: _primary.withValues(alpha: 0.2),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.lightbulb_outline_rounded, color: _primary, size: 24),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Smart insights',
+                style: TextStyle(color: _text, fontWeight: FontWeight.w600, fontSize: 16)),
+            const SizedBox(height: 6),
+            Text(message,
+                style: const TextStyle(color: _textMuted, fontSize: 13, height: 1.4)),
+          ]),
+        ),
       ]),
     );
   }
