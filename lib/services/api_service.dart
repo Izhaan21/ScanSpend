@@ -5,8 +5,8 @@ import '../models/expense_model.dart';
 import 'token_service.dart';
 
 class ApiService {
-  // Use your computer's local Wi-Fi IP Address
-  static const String baseUrl = 'http://192.168.1.77:5238/api/expenses';
+  // Production API URL (Render)
+  static const String baseUrl = 'https://scanspend-backend.onrender.com/api/expenses';
 
   final TokenService _tokenService = TokenService();
 

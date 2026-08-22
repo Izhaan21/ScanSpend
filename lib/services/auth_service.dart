@@ -8,7 +8,7 @@ import 'token_service.dart';
 
 class AuthService {
   // Use your computer's local Wi-Fi IP Address
-  static final String baseUrl = 'http://192.168.1.77:5238/api/auth';
+  static final String baseUrl = 'https://scanspend-backend.onrender.com/api/auth';
 
   final TokenService _tokenService = TokenService();
   final _authController = StreamController<UserModel?>.broadcast();
