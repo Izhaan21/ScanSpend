@@ -63,186 +63,157 @@ class WelcomeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 8),
-                  // Minimalist Brand Identity (Top Left)
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Image.asset(
-                          'assets/logo.png',
-                          width: 24,
-                          height: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'SCANSPEND',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2.2,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
+                  const Spacer(flex: 1),
 
-                  const Spacer(flex: 2),
-
-                  // 3. The Hero Blended 'S' Logo in Blue Orb
-                  Center(
-                    child: SizedBox(
-                      width: 240,
-                      height: 240,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Radiant Glowing Blue Orb Backdrop
-                          Container(
-                            width: 240,
-                            height: 240,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: const RadialGradient(
-                                colors: [
-                                  Color(0xFF2563EB), // Vibrant Electric Blue Core
-                                  Color(0xFF06B6D4), // Cyan Luminous Halo
-                                  Color(0x00090E17), // Fade to transparent
-                                ],
-                                stops: [0.15, 0.55, 1.0],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF2563EB).withValues(alpha: 0.5),
-                                  blurRadius: 70,
-                                  spreadRadius: 15,
+                    // 3. The Hero Blended 'S' Logo in Blue Orb
+                    Center(
+                      child: SizedBox(
+                        width: 240,
+                        height: 240,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Radiant Glowing Blue Orb Backdrop
+                            Container(
+                              width: 240,
+                              height: 240,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const RadialGradient(
+                                  colors: [
+                                    Color(0xFF2563EB), // Vibrant Electric Blue Core
+                                    Color(0xFF06B6D4), // Cyan Luminous Halo
+                                    Color(0x00090E17), // Fade to transparent
+                                  ],
+                                  stops: [0.15, 0.55, 1.0],
                                 ),
-                              ],
-                            ),
-                          ),
-                          // Softly blended logo without borders or sharp edges
-                          ShaderMask(
-                            shaderCallback: (Rect bounds) {
-                              return const RadialGradient(
-                                center: Alignment.center,
-                                radius: 0.48,
-                                colors: [
-                                  Colors.white,
-                                  Colors.white,
-                                  Colors.transparent,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF2563EB).withValues(alpha: 0.5),
+                                    blurRadius: 70,
+                                    spreadRadius: 15,
+                                  ),
                                 ],
-                                stops: [0.0, 0.75, 1.0],
-                              ).createShader(bounds);
-                            },
-                            blendMode: BlendMode.dstIn,
-                            child: Image.asset(
-                              'assets/logo.png',
-                              width: 170,
-                              height: 170,
-                              fit: BoxFit.cover,
+                              ),
+                            ),
+                            // Softly blended logo without borders or sharp edges
+                            ShaderMask(
+                              shaderCallback: (Rect bounds) {
+                                return const RadialGradient(
+                                  center: Alignment.center,
+                                  radius: 0.48,
+                                  colors: [
+                                    Colors.white,
+                                    Colors.white,
+                                    Colors.transparent,
+                                  ],
+                                  stops: [0.0, 0.75, 1.0],
+                                ).createShader(bounds);
+                              },
+                              blendMode: BlendMode.dstIn,
+                              child: Image.asset(
+                                'assets/logo.png',
+                                width: 170,
+                                height: 170,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const Spacer(flex: 2),
+
+                    // High-Contrast Punchy Headline
+                    RichText(
+                      text: TextSpan(
+                        style: theme.textTheme.displayMedium?.copyWith(
+                          color: const Color(0xFFE2E8F0), // Clean light slate
+                          fontWeight: FontWeight.w300,
+                          fontSize: 38,
+                          height: 1.2,
+                          letterSpacing: -0.8,
+                        ),
+                        children: const [
+                          TextSpan(text: 'Scan receipts & track\nyour '),
+                          TextSpan(
+                            text: 'expenses',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
+                          TextSpan(text: ' effortlessly\nwith AI!'),
                         ],
                       ),
                     ),
-                  ),
 
-                  const Spacer(flex: 3),
+                    const Spacer(flex: 3),
 
-                  // High-Contrast Punchy Headline
-                  RichText(
-                    text: TextSpan(
-                      style: theme.textTheme.displayMedium?.copyWith(
-                        color: const Color(0xFFE2E8F0), // Clean light slate
-                        fontWeight: FontWeight.w300,
-                        fontSize: 38,
-                        height: 1.2,
-                        letterSpacing: -0.8,
-                      ),
-                      children: const [
-                        TextSpan(text: 'Scan receipts & track\nyour '),
-                        TextSpan(
-                          text: 'expenses',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        TextSpan(text: ' effortlessly\nwith AI!'),
-                      ],
-                    ),
-                  ),
-
-                  const Spacer(flex: 3),
-
-                  // Interactive Pill Nav Bar (Bottom Controls)
-                  Row(
-                    children: [
-                      // Secondary "Log In" Pill with Touch Ripple Effect
-                      Material(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(33),
-                        child: InkWell(
-                          onTap: () {
-                            // Fire and forget: trigger permission/GPS in the background
-                            context.read<SettingsProvider>().triggerGPSCurrencyDetection(context: context);
-                            
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const LoginScreen()),
-                            );
-                          },
+                    // Interactive Pill Nav Bar (Bottom Controls)
+                    Row(
+                      children: [
+                        // Secondary "Log In" Pill with Touch Ripple Effect
+                        Material(
+                          color: Colors.transparent,
                           borderRadius: BorderRadius.circular(33),
-                          splashColor: const Color(0xFF2563EB).withValues(alpha: 0.35),
-                          highlightColor: const Color(0xFF2563EB).withValues(alpha: 0.15),
-                          child: Ink(
-                            height: 66,
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1E293B), // Slate 800
-                              borderRadius: BorderRadius.circular(33),
-                              border: Border.all(color: const Color(0xFF334155), width: 1.5),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Log In',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
+                          child: InkWell(
+                            onTap: () {
+                              // Fire and forget: trigger permission/GPS in the background
+                              context.read<SettingsProvider>().triggerGPSCurrencyDetection(context: context);
+                              
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(33),
+                            splashColor: const Color(0xFF2563EB).withValues(alpha: 0.35),
+                            highlightColor: const Color(0xFF2563EB).withValues(alpha: 0.15),
+                            child: Ink(
+                              height: 66,
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1E293B), // Slate 800
+                                borderRadius: BorderRadius.circular(33),
+                                border: Border.all(color: const Color(0xFF334155), width: 1.5),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Log In',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
+                        const SizedBox(width: 12),
 
-                      // Animated Slide-To-Start Hero Capsule
-                      Expanded(
-                        child: _SlideToStartButton(
-                          onSlideCompleted: () {
-                            // Fire and forget: trigger permission/GPS in the background
-                            context.read<SettingsProvider>().triggerGPSCurrencyDetection(context: context);
+                        // Animated Slide-To-Start Hero Capsule
+                        Expanded(
+                          child: _SlideToStartButton(
+                            onSlideCompleted: () {
+                              // Fire and forget: trigger permission/GPS in the background
+                              context.read<SettingsProvider>().triggerGPSCurrencyDetection(context: context);
 
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const SignUpScreen()),
-                            );
-                          },
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const SignUpScreen()),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
               ),
-            ),
           ),
         ],
       ),
@@ -350,13 +321,6 @@ class _SlideToStartButtonState extends State<_SlideToStartButton>
               color: const Color(0xFF1E293B), // Slate 800
               borderRadius: BorderRadius.circular(trackHeight / 2),
               border: Border.all(color: const Color(0xFF334155), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF2563EB).withValues(alpha: 0.25),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ],
             ),
             child: Stack(
               clipBehavior: Clip.none,

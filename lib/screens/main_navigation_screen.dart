@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/expense_provider.dart';
-import '../providers/settings_provider.dart';
 import 'dashboard_screen.dart';
 import 'history_screen.dart';
 import 'scan_screen.dart';
@@ -24,7 +23,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   static const Color _islandBg   = Color(0xFF2563EB); // App standard primary blue
   static const Color _activeBlue = Color(0xFF090E17); // Main background color for active pill
   static const Color _inactiveIcon = Color(0xB3FFFFFF); // Semi-transparent white for contrast on blue
-  static const Color _border     = Color(0xFF2F384C); // Illuminated Subtle Edge
 
   @override
   void initState() {

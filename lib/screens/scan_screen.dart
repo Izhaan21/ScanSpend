@@ -40,13 +40,10 @@ class _ScanScreenState extends State<ScanScreen>
   late Animation<double> _pulseAnim;
 
   // Minimalist Premium Dark Palette
-  static const Color _bg         = Color(0xFF090E17);
-  static const Color _cardBg     = Color(0xFF141415);
+  static const Color _cardBg     = Color(0xFF222329);
   static const Color _primary    = Color(0xFF2563EB);
-  static const Color _secondary  = Color(0xFF06B6D4);
   static const Color _border     = Colors.transparent;
   static const Color _textMuted  = Color(0xFF94A3B8);
-  static const Color _text       = Color(0xFFFFFFFF);
 
   @override
   void initState() {

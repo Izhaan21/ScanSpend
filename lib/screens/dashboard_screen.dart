@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'dart:io';
 import '../providers/auth_provider.dart';
 import '../providers/expense_provider.dart';
 import '../providers/settings_provider.dart';
@@ -20,19 +19,19 @@ class _CatConfig {
 _CatConfig _catFor(String category) {
   final c = category.toLowerCase();
   if (c.contains('dining') || c.contains('food') || c.contains('restaur')) {
-    return const _CatConfig('Food & Dining', Icons.restaurant_rounded, Color(0xFFFF6B6B));
+    return const _CatConfig('Food & Dining', Icons.restaurant_rounded, Color(0xFFD87D7D));
   } else if (c.contains('travel') || c.contains('transport') || c.contains('uber') || c.contains('flight')) {
-    return const _CatConfig('Travel & Transit', Icons.flight_takeoff_rounded, Color(0xFF8B5CF6));
+    return const _CatConfig('Travel & Transit', Icons.flight_takeoff_rounded, Color(0xFF9B92C2));
   } else if (c.contains('medical') || c.contains('health') || c.contains('pharmacy') || c.contains('lab')) {
-    return const _CatConfig('Health & Medical', Icons.favorite_rounded, Color(0xFF10B981));
+    return const _CatConfig('Health & Medical', Icons.favorite_rounded, Color(0xFF7BB5A5));
   } else if (c.contains('groceri') || c.contains('supermark') || c.contains('supplies') || c.contains('store')) {
-    return const _CatConfig('Groceries & Retail', Icons.local_mall_rounded, Color(0xFFF59E0B));
+    return const _CatConfig('Groceries & Retail', Icons.local_mall_rounded, Color(0xFFD7A775));
   } else if (c.contains('entertainment') || c.contains('cinema') || c.contains('movie')) {
-    return const _CatConfig('Entertainment', Icons.confirmation_number_rounded, Color(0xFFEC4899));
+    return const _CatConfig('Entertainment', Icons.confirmation_number_rounded, Color(0xFFCC8FAD));
   } else if (c.contains('utility') || c.contains('electric') || c.contains('internet') || c.contains('gas')) {
-    return const _CatConfig('Bills & Utilities', Icons.bolt_rounded, Color(0xFF3B82F6));
+    return const _CatConfig('Bills & Utilities', Icons.bolt_rounded, Color(0xFF849DC5));
   }
-  return const _CatConfig('General Expense', Icons.receipt_long_rounded, Color(0xFF06B6D4));
+  return const _CatConfig('General Expense', Icons.receipt_long_rounded, Color(0xFF8EA3B0));
 }
 
 class _DonutPainter extends CustomPainter {
@@ -81,8 +80,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   // Minimalist Dark Palette
-  static const Color _bg         = Color(0xFF090E17);
-  static const Color _cardBg     = Color(0xFF141415);
+  static const Color _cardBg     = Color(0xFF222329);
   static const Color _primary    = Color(0xFF2563EB);
   static const Color _secondary  = Color(0xFF06B6D4);
   static const Color _text       = Color(0xFFFFFFFF);
@@ -120,16 +118,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 28),
             Row(children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: cat.color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: cat.color.withValues(alpha: 0.4), width: 1.5),
-                ),
-                child: Icon(cat.icon, color: cat.color, size: 30),
-              ),
+              Icon(cat.icon, color: cat.color, size: 30),
               const SizedBox(width: 18),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -218,16 +207,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final sorted = totals.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
     return sorted.map((entry) {
       final configs = [
-        const _CatConfig('Food & Dining', Icons.restaurant_rounded, Color(0xFFFF6B6B)),
-        const _CatConfig('Travel & Transit', Icons.flight_takeoff_rounded, Color(0xFF8B5CF6)),
-        const _CatConfig('Health & Medical', Icons.favorite_rounded, Color(0xFF10B981)),
-        const _CatConfig('Groceries & Retail', Icons.local_mall_rounded, Color(0xFFF59E0B)),
-        const _CatConfig('Entertainment', Icons.confirmation_number_rounded, Color(0xFFEC4899)),
-        const _CatConfig('Bills & Utilities', Icons.bolt_rounded, Color(0xFF3B82F6)),
-        const _CatConfig('General Expense', Icons.receipt_long_rounded, Color(0xFF06B6D4)),
+        const _CatConfig('Food & Dining', Icons.restaurant_rounded, Color(0xFFD87D7D)),
+        const _CatConfig('Travel & Transit', Icons.flight_takeoff_rounded, Color(0xFF9B92C2)),
+        const _CatConfig('Health & Medical', Icons.favorite_rounded, Color(0xFF7BB5A5)),
+        const _CatConfig('Groceries & Retail', Icons.local_mall_rounded, Color(0xFFD7A775)),
+        const _CatConfig('Entertainment', Icons.confirmation_number_rounded, Color(0xFFCC8FAD)),
+        const _CatConfig('Bills & Utilities', Icons.bolt_rounded, Color(0xFF849DC5)),
+        const _CatConfig('General Expense', Icons.receipt_long_rounded, Color(0xFF8EA3B0)),
       ];
       final cfg = configs.firstWhere((c) => c.label == entry.key,
-          orElse: () => const _CatConfig('General Expense', Icons.receipt_long_rounded, Color(0xFF06B6D4)));
+          orElse: () => const _CatConfig('General Expense', Icons.receipt_long_rounded, Color(0xFF8EA3B0)));
       return MapEntry(cfg, entry.value);
     }).toList();
   }
@@ -446,7 +435,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final top = catData.take(5).toList();
     final colors = top.map((e) => e.key.color).toList();
     final segments = top.map((e) => MapEntry(e.key.label, grandTotal > 0 ? e.value / grandTotal : 0.0)).toList();
-    final topCat = top.first;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -534,15 +522,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 32),
             child: Center(child: Column(children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: _border),
-                ),
-                child: const Icon(Icons.receipt_long_rounded, size: 32, color: _textMuted),
-              ),
+              const Icon(Icons.receipt_long_rounded, size: 40, color: _textMuted),
+
+
               const SizedBox(height: 16),
               const Text('No transactions yet', style: TextStyle(color: _text, fontSize: 16, fontWeight: FontWeight.w500)),
               const SizedBox(height: 6),
@@ -562,19 +544,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF141415),
+                  color: const Color(0xFF222329),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: cat.color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(cat.icon, color: cat.color, size: 22),
-                  ),
+                  Icon(cat.icon, color: cat.color, size: 26),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -616,15 +590,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         border: Border.all(color: _primary.withValues(alpha: 0.2)),
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: _primary.withValues(alpha: 0.2),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.lightbulb_outline_rounded, color: _primary, size: 24),
-        ),
+        const Icon(Icons.lightbulb_outline_rounded, color: _primary, size: 24),
         const SizedBox(width: 16),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

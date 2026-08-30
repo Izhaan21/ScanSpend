@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
@@ -82,7 +81,7 @@ class AuthService {
   static const _webClientId =
       '331115187512-2vou085fqmv3f2df0q6rsiknsbeq5j62.apps.googleusercontent.com';
 
-  bool _isGoogleInitialized = false;
+  static bool _isGoogleInitialized = false;
 
   Future<UserModel> loginWithGoogle() async {
     // Initialize GoogleSignIn once before the first use

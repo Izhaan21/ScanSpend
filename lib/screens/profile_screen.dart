@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -17,9 +16,8 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   // Minimalist Premium Dark Palette
   static const Color _bg         = Color(0xFF090E17);
-  static const Color _cardBg     = Color(0xFF141415);
+  static const Color _cardBg     = Color(0xFF222329);
   static const Color _primary    = Color(0xFF2563EB);
-  static const Color _secondary  = Color(0xFF06B6D4);
   static const Color _text       = Color(0xFFFFFFFF);
   static const Color _textMuted  = Color(0xFF94A3B8);
   static const Color _border     = Colors.transparent;
@@ -258,11 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(color: _primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-                    child: const Icon(Icons.my_location_rounded, color: _primary, size: 20),
-                  ),
+                  leading: const Icon(Icons.my_location_rounded, color: _primary, size: 24),
                   title: const Text('Auto-detect', style: TextStyle(color: _text, fontWeight: FontWeight.w500, fontSize: 16)),
                   subtitle: const Text('Uses your location', style: TextStyle(color: _textMuted, fontSize: 14)),
                   onTap: () => Navigator.pop(context, '__auto__'),
@@ -298,9 +292,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _exportData() async {
-    _snack('Export feature coming soon.', error: false);
-  }
 
 
 
@@ -564,11 +555,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(children: [
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(color: _primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: _primary, size: 20),
-          ),
+          Icon(icon, color: _primary, size: 22),
+
           const SizedBox(width: 16),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
               children: [

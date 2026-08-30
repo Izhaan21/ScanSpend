@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.scanspend"
+    namespace = "com.scanspend.app"
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
@@ -23,9 +23,9 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.scanspend"
-        // google_mlkit_text_recognition requires minSdk >= 21
-        minSdk = flutter.minSdkVersion
+        applicationId = "com.scanspend.app"
+        // google_sign_in v7 (Credential Manager) requires minSdk >= 24
+        minSdk = 24
         targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName

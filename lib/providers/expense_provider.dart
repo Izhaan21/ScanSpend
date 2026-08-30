@@ -162,7 +162,11 @@ class ExpenseProvider extends ChangeNotifier {
       _setLoading(true, message: 'Saving expense to vault...');
       
       // Save to .NET Backend
-      await _apiService.saveExpense(_currentExpense!);
+      if (_currentExpense!.id != '0' && _currentExpense!.id.isNotEmpty) {
+        await _apiService.updateExpense(_currentExpense!);
+      } else {
+        await _apiService.saveExpense(_currentExpense!);
+      }
       
       // Re-fetch everything to get the correct backend IDs
       // (because the backend generates the actual integer ID for it)

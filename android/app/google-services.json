@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:331115187512:android:6ca1d4fbd7c41e7cb885cd",
         "android_client_info": {
-          "package_name": "com.example.scanspend"
+          "package_name": "com.scanspend.app"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "331115187512-1bodtk3rk84dt3sff3ot5ph1j80159ee.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.scanspend",
+            "package_name": "com.scanspend.app",
             "certificate_hash": "737f0c04ae28b745f6caa068d04fe005e1ce3a23"
           }
         },
@@ -42,7 +42,7 @@
               "client_id": "331115187512-aab94r431b0hkvsak3310ji04qdcd6e2.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.scanspend"
+                "bundle_id": "com.scanspend.app"
               }
             }
           ]

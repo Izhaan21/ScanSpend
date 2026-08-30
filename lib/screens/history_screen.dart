@@ -6,6 +6,7 @@ import '../providers/expense_provider.dart';
 import '../providers/settings_provider.dart';
 import '../models/expense_model.dart';
 import '../widgets/premium_background.dart';
+import 'review_screen.dart';
 
 enum _Filter { all, thisWeek, thisMonth, category }
 
@@ -20,19 +21,19 @@ class _CatConfig {
 _CatConfig _catFor(String category) {
   final c = category.toLowerCase();
   if (c.contains('dining') || c.contains('food') || c.contains('restaur')) {
-    return const _CatConfig('Food & Dining', Icons.restaurant_rounded, Color(0xFFFF6B6B));
+    return const _CatConfig('Food & Dining', Icons.restaurant_rounded, Color(0xFFD87D7D));
   } else if (c.contains('travel') || c.contains('transport') || c.contains('uber') || c.contains('flight')) {
-    return const _CatConfig('Travel & Transit', Icons.flight_takeoff_rounded, Color(0xFF8B5CF6));
+    return const _CatConfig('Travel & Transit', Icons.flight_takeoff_rounded, Color(0xFF9B92C2));
   } else if (c.contains('medical') || c.contains('health') || c.contains('pharmacy') || c.contains('lab')) {
-    return const _CatConfig('Health & Medical', Icons.favorite_rounded, Color(0xFF10B981));
+    return const _CatConfig('Health & Medical', Icons.favorite_rounded, Color(0xFF7BB5A5));
   } else if (c.contains('groceri') || c.contains('supermark') || c.contains('supplies') || c.contains('store')) {
-    return const _CatConfig('Groceries & Retail', Icons.local_mall_rounded, Color(0xFFF59E0B));
+    return const _CatConfig('Groceries & Retail', Icons.local_mall_rounded, Color(0xFFD7A775));
   } else if (c.contains('entertainment') || c.contains('cinema') || c.contains('movie')) {
-    return const _CatConfig('Entertainment', Icons.confirmation_number_rounded, Color(0xFFEC4899));
+    return const _CatConfig('Entertainment', Icons.confirmation_number_rounded, Color(0xFFCC8FAD));
   } else if (c.contains('utility') || c.contains('electric') || c.contains('internet') || c.contains('gas')) {
-    return const _CatConfig('Bills & Utilities', Icons.bolt_rounded, Color(0xFF3B82F6));
+    return const _CatConfig('Bills & Utilities', Icons.bolt_rounded, Color(0xFF849DC5));
   }
-  return const _CatConfig('General Expense', Icons.receipt_long_rounded, Color(0xFF06B6D4));
+  return const _CatConfig('General Expense', Icons.receipt_long_rounded, Color(0xFF8EA3B0));
 }
 
 class HistoryScreen extends StatefulWidget {
@@ -44,8 +45,7 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   // Minimalist Dark Palette
-  static const Color _bg         = Color(0xFF090E17);
-  static const Color _cardBg     = Color(0xFF141415);
+  static const Color _cardBg     = Color(0xFF222329);
   static const Color _primary    = Color(0xFF2563EB);
   static const Color _secondary  = Color(0xFF06B6D4);
   static const Color _text       = Color(0xFFFFFFFF);
@@ -109,14 +109,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 final selected = _activeFilter == _Filter.category && _categoryFilter == c;
                 return ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: cfg.color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(cfg.icon, color: cfg.color, size: 20),
-                  ),
+                  leading: Icon(cfg.icon, color: cfg.color, size: 24),
                   title: Text(c, style: TextStyle(color: _text, fontWeight: selected ? FontWeight.w600 : FontWeight.w500, fontSize: 16)),
                   trailing: selected ? const Icon(Icons.check_circle_rounded, color: _primary) : null,
                   onTap: () {
@@ -141,7 +134,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF0B1220),
+      backgroundColor: _cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
@@ -165,16 +158,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
             const SizedBox(height: 28),
             Row(children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: cat.color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: cat.color.withValues(alpha: 0.4), width: 1.5),
-                ),
-                child: Icon(cat.icon, color: cat.color, size: 30),
-              ),
+              Icon(cat.icon, color: cat.color, size: 30),
               const SizedBox(width: 18),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -183,6 +167,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   Text(DateFormat('EEE, MMMM d, yyyy  •  hh:mm a').format(exp.date),
                       style: const TextStyle(color: _textMuted, fontSize: 13, fontWeight: FontWeight.w400)),
                 ]),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_rounded, color: _primary),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  context.read<ExpenseProvider>().updateCurrentExpense(exp);
+                  Navigator.push(ctx, MaterialPageRoute(builder: (_) => const ReviewScreen()));
+                },
               ),
             ]),
             const SizedBox(height: 28),
@@ -225,7 +217,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF111927),
+                  color: const Color(0xFF1C1C1E),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: _border),
                 ),
@@ -394,8 +386,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 final yestKey = DateFormat('yyyy-MM-dd').format(now.subtract(const Duration(days: 1)));
                                 
                                 String label = DateFormat('MMMM d, yyyy').format(DateTime.parse(dateKey));
-                                if (dateKey == todayKey) label = 'Today';
-                                else if (dateKey == yestKey) label = 'Yesterday';
+                                if (dateKey == todayKey) {
+                                  label = 'Today';
+                                } else if (dateKey == yestKey) {
+                                  label = 'Yesterday';
+                                }
 
                                 final dayTotal = dayExpenses.fold(0.0, (s, e) => s + e.total);
 
@@ -470,11 +465,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget _emptyState() {
     return Center(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(color: Color(0xFF111A2E), shape: BoxShape.circle),
-          child: const Icon(Icons.history_rounded, size: 40, color: _textMuted),
-        ),
+        const Icon(Icons.history_rounded, size: 48, color: _textMuted),
+
         const SizedBox(height: 24),
         Text(
           _query.isNotEmpty ? 'No matches found' : 'No transactions yet',
@@ -550,18 +542,11 @@ class _ExpenseCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF141415),
+              color: const Color(0xFF222329),
               borderRadius: BorderRadius.circular(24),
             ),
             child: Row(children: [
-              Container(
-                width: 52, height: 52,
-                decoration: BoxDecoration(
-                  color: cat.color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(cat.icon, color: cat.color, size: 24),
-              ),
+              Icon(cat.icon, color: cat.color, size: 26),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(

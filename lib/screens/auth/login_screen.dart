@@ -394,13 +394,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     ],
                                   ),
-                                  child: const Text(
-                                    'G',
-                                    style: TextStyle(
-                                      color: Color(0xFFEA4335),
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 17,
-                                    ),
+                                  child: Image.asset(
+                                    'assets/google_logo.png',
+                                    width: 24,
+                                    height: 24,
                                   ),
                                 ),
                                 const SizedBox(width: 14),

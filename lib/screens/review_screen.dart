@@ -24,10 +24,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
   // Minimalist Premium Dark Palette
   static const Color _bg         = Color(0xFF090E17);
-  static const Color _cardBg     = Color(0xFF141415);
+  static const Color _cardBg     = Color(0xFF222329);
   static const Color _cardHeader = Color(0xFF1C1C1E);
   static const Color _primary    = Color(0xFF2563EB);
-  static const Color _secondary  = Color(0xFF06B6D4);
   static const Color _text       = Color(0xFFFFFFFF);
   static const Color _textSub    = Color(0xFFCBD5E1);
   static const Color _textMuted  = Color(0xFF94A3B8);
@@ -273,14 +272,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
               ),
               child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: _primary.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.auto_awesome_rounded, color: _primary, size: 16),
-                  ),
+                  const Icon(Icons.auto_awesome_rounded, color: _primary, size: 18),
+
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
