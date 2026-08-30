@@ -15,7 +15,7 @@ class AIService {
 
   AIService()
       : _model = GenerativeModel(
-          model: 'gemini-2.0-flash',
+          model: 'gemini-2.5-flash',
           apiKey: _apiKey,
           generationConfig: GenerationConfig(
             temperature: 0.1,
@@ -23,7 +23,7 @@ class AIService {
           ),
         ),
         _textModel = GenerativeModel(
-          model: 'gemini-2.0-flash',
+          model: 'gemini-2.5-flash',
           apiKey: _apiKey,
           generationConfig: GenerationConfig(
             temperature: 0.1,
@@ -912,7 +912,8 @@ CRITICAL RULES:
     }
     if (msg.contains('not found') || msg.contains('model')) {
       return Exception(
-          'MODEL_ERROR: Model not available. Check your API key\'s allowed models.');
+          'MODEL_ERROR: Gemini model not available. '
+          'The model name may be outdated or your API key may not have access to it.');
     }
     return Exception('GEMINI_ERROR: ${e.message}');
   }
