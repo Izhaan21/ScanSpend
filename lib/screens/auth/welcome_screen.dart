@@ -19,7 +19,7 @@ class WelcomeScreen extends StatelessWidget {
         children: [
           // 1. Ambient Background Glow
           Positioned(
-            top: -size.height * 0.15,
+            top: -size.height * 0.25,
             left: -size.width * 0.2,
             right: -size.width * 0.2,
             child: Container(
@@ -65,65 +65,19 @@ class WelcomeScreen extends StatelessWidget {
                 children: [
                   const Spacer(flex: 1),
 
-                    // 3. The Hero Blended 'S' Logo in Blue Orb
+
+                    // 3. ScanSpend Logo
                     Center(
-                      child: SizedBox(
-                        width: 240,
-                        height: 240,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Radiant Glowing Blue Orb Backdrop
-                            Container(
-                              width: 240,
-                              height: 240,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: const RadialGradient(
-                                  colors: [
-                                    Color(0xFF2563EB), // Vibrant Electric Blue Core
-                                    Color(0xFF06B6D4), // Cyan Luminous Halo
-                                    Color(0x00090E17), // Fade to transparent
-                                  ],
-                                  stops: [0.15, 0.55, 1.0],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF2563EB).withValues(alpha: 0.5),
-                                    blurRadius: 70,
-                                    spreadRadius: 15,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Softly blended logo without borders or sharp edges
-                            ShaderMask(
-                              shaderCallback: (Rect bounds) {
-                                return const RadialGradient(
-                                  center: Alignment.center,
-                                  radius: 0.48,
-                                  colors: [
-                                    Colors.white,
-                                    Colors.white,
-                                    Colors.transparent,
-                                  ],
-                                  stops: [0.0, 0.75, 1.0],
-                                ).createShader(bounds);
-                              },
-                              blendMode: BlendMode.dstIn,
-                              child: Image.asset(
-                                'assets/logo.png',
-                                width: 170,
-                                height: 170,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ],
-                        ),
+                      child: Image.asset(
+                        'assets/logo.png',
+                        width: 170,
+                        height: 170,
+                        fit: BoxFit.contain,
                       ),
                     ),
 
                     const Spacer(flex: 2),
+
 
                     // High-Contrast Punchy Headline
                     RichText(
@@ -149,7 +103,7 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                     ),
 
-                    const Spacer(flex: 3),
+                    const Spacer(flex: 4),
 
                     // Interactive Pill Nav Bar (Bottom Controls)
                     Row(

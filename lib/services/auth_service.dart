@@ -24,9 +24,10 @@ class AuthService {
   Future<void> _initializeAuth() async {
     final hasToken = await _tokenService.isLoggedIn();
     if (hasToken) {
-      // In a real app, you might want to call an endpoint like /api/auth/me to get user details
-      // For now, we mock the user if token exists since .NET backend doesn't have a /me endpoint yet
-      _currentUser = UserModel(uid: '1', email: 'user@scanspend.com', name: 'User');
+      final details = await _tokenService.getUserDetails();
+      final email = details['email'] ?? 'user@scanspend.com';
+      final name = details['name'] ?? 'User';
+      _currentUser = UserModel(uid: '1', email: email, name: name);
     } else {
       _currentUser = null;
     }
@@ -47,10 +48,34 @@ class AuthService {
       final data = json.decode(response.body);
       final token = data['token'];
       
-      // Save JWT token
-      await _tokenService.saveToken(token);
+      String extractedName = 'User';
+      String extractedEmail = email;
+
+      // Try to decode JWT to extract real name
+      try {
+        final parts = token.split('.');
+        if (parts.length == 3) {
+          final payload = json.decode(
+            utf8.decode(base64Url.decode(base64.normalize(parts[1])))
+          );
+          
+          extractedEmail = payload['email'] ?? 
+                           payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ?? 
+                           email;
+                           
+          extractedName = payload['name'] ?? 
+                          payload['unique_name'] ?? 
+                          payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ?? 
+                          extractedEmail.split('@')[0];
+        }
+      } catch (e) {
+        print('Error decoding JWT: $e');
+      }
       
-      _currentUser = UserModel(uid: '1', email: email, name: 'User');
+      // Save JWT token
+      await _tokenService.saveToken(token, email: extractedEmail, name: extractedName);
+      
+      _currentUser = UserModel(uid: '1', email: extractedEmail, name: extractedName);
       _authController.add(_currentUser);
       return _currentUser!;
     } else {
@@ -70,7 +95,10 @@ class AuthService {
 
     if (response.statusCode == 200) {
       // Automatically login after successful registration
-      return await login(email, password);
+      final user = await login(email, password);
+      // Ensure the entered name is updated
+      await updateName(name);
+      return _currentUser!;
     } else {
       throw Exception('Signup failed: ${response.body}');
     }
@@ -118,7 +146,7 @@ class AuthService {
       final name = data['name'] ?? data['Name'] ?? googleUser.displayName ?? 'User';
 
       // Step 4: Save our custom JWT token securely
-      await _tokenService.saveToken(token);
+      await _tokenService.saveToken(token, email: email, name: name);
 
       _currentUser = UserModel(uid: '1', email: email, name: name);
       _authController.add(_currentUser);
@@ -136,6 +164,11 @@ class AuthService {
         email: _currentUser!.email,
         name: newName,
       );
+      // Persist the new name locally
+      final token = await _tokenService.getToken();
+      if (token != null) {
+        await _tokenService.saveToken(token, email: _currentUser!.email, name: newName);
+      }
       _authController.add(_currentUser);
     }
   }
